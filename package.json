@@ -1,0 +1,32 @@
+{
+  "name": "kurti-cove-client",
+  "version": "1.0.0",
+  "description": "Kurti Cove E-Commerce Frontend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@reduxjs/toolkit": "latest",
+    "axios": "latest",
+    "lucide-react": "1.28.0",
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "react-hot-toast": "latest",
+    "react-icons": "latest",
+    "react-redux": "latest"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "latest",
+    "autoprefixer": "latest",
+    "eslint": "latest",
+    "eslint-config-next": "latest",
+    "postcss": "latest",
+    "tailwindcss": "latest"
+  }
+}
