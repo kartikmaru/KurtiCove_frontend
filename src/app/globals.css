@@ -2,105 +2,95 @@
 @import "tailwindcss";
 
 @theme {
-  /* ── Brand Colors ── */
-  --color-brand-bg: #FAF5FF;
-  --color-brand-accent: #C084FC;
-  --color-brand-soft: #E9D5FF;
-  --color-brand-dark: #3B0764;
-  --color-brand-card: #F3E8FF;
-  --color-brand-btn: #A855F7;
-  --color-brand-btn-hover: #9333EA;
-  --color-brand-border: #E9D5FF;
+  /* ══════════════════════════════════════════════════════════
+     KURTI COVE — PASTEL PALETTE
+     4-colour system: rose · peach · cream · mint
+  ══════════════════════════════════════════════════════════ */
+
+  /* ── Core pastels ── */
+  --color-kc-pink:  #F8A5B5;   /* soft rose pink  */
+  --color-kc-peach: #FBDBBB;   /* soft peach      */
+  --color-kc-cream: #FCFAE0;   /* soft cream      */
+  --color-kc-mint:  #B5EDDB;   /* soft mint       */
+
+  /* ── Derived contrast tokens ── */
+  --color-kc-berry:  #7B2447;  /* deep berry — headings & active states */
+  --color-kc-mauve:  #6B4553;  /* muted mauve-brown — body text         */
+  --color-kc-rose:   #E05C88;  /* deep rose — primary CTA / accent      */
+  --color-kc-rose-lt:#F8A5B5;  /* light rose — borders / bg tints       */
+
+  /* ── Surface shades ── */
+  --color-kc-card:   #FFFAF5;  /* card whites (warm cream-white)        */
+  --color-kc-border: #F5C8D4;  /* rose-tinted border                    */
+  --color-kc-peach-lt: #FEF0E3;/* light peach section bg               */
+  --color-kc-mint-lt:  #E8FAF4;/* light mint section bg                */
+
+  /* ── Legacy aliases so existing Tailwind classes still compile ── */
+  --color-brand-bg:         #FCFAE0;
+  --color-brand-accent:     #F8A5B5;
+  --color-brand-soft:       #F5C8D4;
+  --color-brand-dark:       #7B2447;
+  --color-brand-card:       #FEF0E3;
+  --color-brand-btn:        #E05C88;
+  --color-brand-btn-hover:  #C94A74;
+  --color-brand-border:     #F5C8D4;
 
   /* ── Font Families ── */
-  --font-family-serif: "Playfair Display", "Cormorant Garamond", Georgia, serif;
-  --font-family-sans: Poppins, ui-sans-serif, system-ui, sans-serif;
+  --font-family-serif:   "Playfair Display", "Cormorant Garamond", Georgia, serif;
+  --font-family-sans:    Poppins, ui-sans-serif, system-ui, sans-serif;
   --font-family-cursive: "Dancing Script", cursive;
 
-  /* ── Custom Shadows ── */
-  --shadow-card: 0 4px 20px rgba(168, 85, 247, 0.1);
-  --shadow-card-hover: 0 8px 30px rgba(168, 85, 247, 0.2);
+  /* ── Shadows — rose glow instead of purple ── */
+  --shadow-card:       0 4px 20px rgba(224, 92, 136, 0.10);
+  --shadow-card-hover: 0 8px 30px rgba(224, 92, 136, 0.20);
 
-  /* ── Custom Border Radius ── */
   --radius-card: 14px;
 }
 
 /* ── Base Styles ── */
-html {
-  scroll-behavior: smooth;
-}
+html { scroll-behavior: smooth; }
 
 body {
   font-family: Poppins, ui-sans-serif, system-ui, sans-serif;
-  background-color: #FAF5FF;
-  color: #3B0764;
+  background-color: #FCFAE0;
+  color: #7B2447;
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
-/* ── Custom Font Utilities ── */
-.font-serif {
-  font-family: "Playfair Display", "Cormorant Garamond", Georgia, serif !important;
-}
+/* ── Font utilities ── */
+.font-serif   { font-family: "Playfair Display", "Cormorant Garamond", Georgia, serif !important; }
+.font-sans    { font-family: Poppins, ui-sans-serif, system-ui, sans-serif !important; }
+.font-cursive { font-family: "Dancing Script", cursive !important; }
 
-.font-sans {
-  font-family: Poppins, ui-sans-serif, system-ui, sans-serif !important;
-}
+/* ── Shadow utilities ── */
+.shadow-card       { box-shadow: 0 4px 20px rgba(224,92,136,0.10); }
+.shadow-card-hover { box-shadow: 0 8px 30px rgba(224,92,136,0.22); }
+.hover\:shadow-card-hover:hover { box-shadow: 0 8px 30px rgba(224,92,136,0.22); }
 
-.font-cursive {
-  font-family: "Dancing Script", cursive !important;
-}
+/* ── Line-clamp ── */
+.line-clamp-1 { overflow:hidden; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; }
+.line-clamp-2 { overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
 
-/* ── Custom Shadow Utilities ── */
-.shadow-card {
-  box-shadow: 0 4px 20px rgba(168, 85, 247, 0.1);
-}
-
-.shadow-card-hover {
-  box-shadow: 0 8px 30px rgba(168, 85, 247, 0.2);
-}
-
-/* ── Line Clamp Utilities ── */
-.line-clamp-1 {
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
-}
-
-.line-clamp-2 {
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-
-/* ── Hover shadow utility ── */
-.hover\:shadow-card-hover:hover {
-  box-shadow: 0 8px 30px rgba(168, 85, 247, 0.2);
-}
-
-/* ── Brand color utility classes ── */
+/* ── Brand colour utilities (pastel edition) ── */
 @layer utilities {
-  .bg-brand-bg        { background-color: #FAF5FF; }
-  .bg-brand-accent    { background-color: #C084FC; }
-  .bg-brand-soft      { background-color: #E9D5FF; }
-  .bg-brand-dark      { background-color: #3B0764; }
-  .bg-brand-card      { background-color: #F3E8FF; }
-  .bg-brand-btn       { background-color: #A855F7; }
+  .bg-brand-bg      { background-color: #FCFAE0; }
+  .bg-brand-accent  { background-color: #F8A5B5; }
+  .bg-brand-soft    { background-color: #F5C8D4; }
+  .bg-brand-dark    { background-color: #7B2447; }
+  .bg-brand-card    { background-color: #FEF0E3; }
+  .bg-brand-btn     { background-color: #E05C88; }
 
-  .text-brand-bg      { color: #FAF5FF; }
-  .text-brand-accent  { color: #C084FC; }
-  .text-brand-soft    { color: #E9D5FF; }
-  .text-brand-dark    { color: #3B0764; }
-  .text-brand-card    { color: #F3E8FF; }
-  .text-brand-btn     { color: #A855F7; }
+  .text-brand-bg    { color: #FCFAE0; }
+  .text-brand-accent{ color: #F8A5B5; }
+  .text-brand-soft  { color: #F5C8D4; }
+  .text-brand-dark  { color: #7B2447; }
+  .text-brand-card  { color: #FEF0E3; }
+  .text-brand-btn   { color: #E05C88; }
 
-  .border-brand-soft  { border-color: #E9D5FF; }
-  .border-brand-btn   { border-color: #A855F7; }
-  .border-brand-dark  { border-color: #3B0764; }
+  .border-brand-soft{ border-color: #F5C8D4; }
+  .border-brand-btn { border-color: #E05C88; }
+  .border-brand-dark{ border-color: #7B2447; }
 
-  .rounded-card       { border-radius: 14px; }
+  .rounded-card     { border-radius: 14px; }
 }

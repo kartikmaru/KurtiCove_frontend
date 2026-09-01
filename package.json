@@ -27,6 +27,7 @@
     "eslint": "latest",
     "eslint-config-next": "latest",
     "postcss": "latest",
+    "sharp": "^0.35.4",
     "tailwindcss": "latest"
   }
 }

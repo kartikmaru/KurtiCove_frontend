@@ -2,30 +2,38 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi'
 
-// ── Desktop images (4 images in public/hero/) ─────────────────
+/*
+  All desktop banner images are standardized to 1717×916 (ratio ≈1.874:1).
+  The slider container uses this fixed ratio so height NEVER jumps between
+  slides. Any future image with an odd ratio is handled gracefully by the
+  ambient-blur-fill layer behind the foreground — the foreground is always
+  shown complete with object-fit:contain and zero cropping.
+
+  Ideal future upload size: 1717×916 px (PNG or WebP).
+*/
+
 const DESKTOP_SLIDES = [
-  { src: '/hero/image1.png',  alt: 'Kurti Cove Collection 1' },
-  { src: '/hero/image2.png',  alt: 'Kurti Cove Collection 2' },
-  { src: '/hero/image3.png',  alt: 'Kurti Cove Collection 3' },
-  { src: '/hero/image4.png',  alt: 'Kurti Cove Collection 4' },
+  { src: '/hero/image1.png', alt: 'Kurti Cove Collection 1' },
+  { src: '/hero/image2.png', alt: 'Kurti Cove Collection 2' },
+  { src: '/hero/image3.png', alt: 'Kurti Cove Collection 3' },
+  { src: '/hero/image4.png', alt: 'Kurti Cove Collection 4' },
 ]
 
-// ── Mobile images (4 images in public/for mobile hero/) ───────
 const MOBILE_SLIDES = [
-  { src: '/for%20mobile%20hero/34c535f4-1e26-436c-af3b-2f5985c86a77.png',      alt: 'Kurti Cove Mobile Collection 1' },
-  { src: '/for%20mobile%20hero/image1ba5eea5e-70c3-4509-a37a-9578cd09125d.png', alt: 'Kurti Cove Mobile Collection 2' },
-  { src: '/for%20mobile%20hero/image2.png',                                       alt: 'Kurti Cove Mobile Collection 3' },
-  { src: '/for%20mobile%20hero/image3.png',                                       alt: 'Kurti Cove Mobile Collection 4' },
+  { src: '/for%20mobile%20hero/34c535f4-1e26-436c-af3b-2f5985c86a77.png',       alt: 'Kurti Cove Mobile 1' },
+  { src: '/for%20mobile%20hero/image1ba5eea5e-70c3-4509-a37a-9578cd09125d.png',  alt: 'Kurti Cove Mobile 2' },
+  { src: '/for%20mobile%20hero/image2.png',                                        alt: 'Kurti Cove Mobile 3' },
+  { src: '/for%20mobile%20hero/image3.png',                                        alt: 'Kurti Cove Mobile 4' },
 ]
 
-const INTERVAL_MS = 3000
+const INTERVAL_MS = 3500
 
 export default function HeroBanner() {
   const [current,  setCurrent]  = useState(0)
   const [isMobile, setIsMobile] = useState(false)
   const intervalRef = useRef(null)
 
-  /* ── Mobile detection + resize ───────────────────────────── */
+  /* ── Mobile detection ────────────────────────────────────── */
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
     check()
@@ -39,21 +47,12 @@ export default function HeroBanner() {
   /* ── Auto-slide ──────────────────────────────────────────── */
   const startTimer = useCallback(() => {
     clearInterval(intervalRef.current)
-    intervalRef.current = setInterval(() => {
-      setCurrent((c) => (c + 1) % total)
-    }, INTERVAL_MS)
+    intervalRef.current = setInterval(() => setCurrent((c) => (c + 1) % total), INTERVAL_MS)
   }, [total])
 
-  useEffect(() => {
-    startTimer()
-    return () => clearInterval(intervalRef.current)
-  }, [startTimer])
+  useEffect(() => { startTimer(); return () => clearInterval(intervalRef.current) }, [startTimer])
 
-  const goTo = useCallback(
-    (idx) => { setCurrent((idx + total) % total); startTimer() },
-    [total, startTimer]
-  )
-
+  const goTo   = useCallback((idx) => { setCurrent(((idx % total) + total) % total); startTimer() }, [total, startTimer])
   const goNext = useCallback(() => goTo(current + 1), [current, goTo])
   const goPrev = useCallback(() => goTo(current - 1), [current, goTo])
 
@@ -69,42 +68,109 @@ export default function HeroBanner() {
 
   return (
     <>
+      <style>{`
+        @keyframes marquee {
+          from { transform: translateX(0); }
+          to   { transform: translateX(-50%); }
+        }
+        .marquee-track { animation: marquee 30s linear infinite; }
+        .marquee-track:hover { animation-play-state: paused; }
+      `}</style>
+
       <section
-        className="-mt-16 md:-mt-20 w-full relative overflow-hidden shadow-lg shadow-purple-200/30"
+        className="-mt-14 md:-mt-20 w-full relative"
         aria-label="Hero image slider"
       >
-        <div className="w-full h-[50vh] md:h-[85vh] overflow-hidden relative">
-          {/* Sliding track */}
-          <div
-            className="flex h-full transition-transform duration-500 ease-in-out"
-            style={{
-              width: `${total * 100}%`,
-              transform: `translateX(-${current * (100 / total)}%)`,
-            }}
-          >
-            {slides.map((slide, idx) => (
+        {/*
+          FIXED-RATIO CONTAINER
+          ──────────────────────────────────────────────────────
+          aspect-ratio: 1717/916 keeps height perfectly image-derived
+          on desktop (all files are exactly 1717×916 after standardization).
+
+          On mobile we fall back to auto height driven by the image itself
+          since mobile images have varying portrait ratios — the foreground
+          contain + blur-fill handles any mismatch seamlessly.
+
+          overflow:hidden here is intentional — it clips ONLY the blurred
+          background layer and the slide wrappers, not any overlay UI
+          (arrows/dots sit inside so they are fine).
+        */}
+        <div
+          className="relative w-full overflow-hidden"
+          style={{ aspectRatio: isMobile ? 'auto' : '1717 / 916' }}
+        >
+          {/* ── SLIDES ── */}
+          {slides.map((slide, idx) => {
+            const active = idx === current
+            return (
               <div
                 key={slide.src}
-                className="relative h-full flex-shrink-0"
-                style={{ width: `${100 / total}%` }}
-                aria-hidden={idx !== current}
+                /*
+                  Active slide: opacity 1, z-index 1.
+                  Inactive: opacity 0, z-index 0 (hidden behind, pre-loaded).
+                  position:absolute inset-0 so all slides stack without
+                  affecting layout — zero height contribution.
+                */
+                className="absolute inset-0 transition-opacity duration-600 ease-in-out"
+                style={{ opacity: active ? 1 : 0, zIndex: active ? 1 : 0 }}
+                aria-hidden={!active}
               >
+                {/*
+                  LAYER 1 — AMBIENT BLUR FILL (background)
+                  Same image, object-fit:cover + heavy blur + dark wash.
+                  Fills any letterbox bars that would appear if the image
+                  ratio doesn't match the container exactly.
+                  pointer-events:none so it never intercepts clicks.
+                */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={slide.src}
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute inset-0 w-full h-full pointer-events-none select-none"
+                  style={{
+                    objectFit:  'cover',
+                    objectPosition: 'center',
+                    filter:     'blur(36px) brightness(0.55) saturate(1.2)',
+                    transform:  'scale(1.08)', // eliminates blur edge halos
+                    willChange: 'opacity',
+                  }}
+                  draggable={false}
+                  loading={idx === 0 ? 'eager' : 'lazy'}
+                />
+
+                {/*
+                  LAYER 2 — FOREGROUND (main content, never cropped)
+                  object-fit:contain keeps every pixel of the artwork visible.
+                  On desktop all images are 1717×916 = same ratio as the
+                  container, so contain == fill (no letterbox bars at all).
+                  On mobile or for any future odd-ratio upload, contain
+                  shows the full image with the blur layer filling the bars.
+                */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={slide.src}
                   alt={slide.alt}
-                  className="w-full h-full object-cover object-center select-none"
+                  className="absolute inset-0 w-full h-full select-none"
+                  style={{
+                    objectFit:      'contain',
+                    objectPosition: 'center',
+                    willChange:     'opacity',
+                  }}
                   draggable={false}
                   loading={idx === 0 ? 'eager' : 'lazy'}
                 />
               </div>
-            ))}
-          </div>
+            )
+          })}
 
-          {/* Bottom gradient */}
-          <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-black/15 to-transparent pointer-events-none z-10" />
+          {/* ── BOTTOM GRADIENT (decorative) ── */}
+          <div
+            className="absolute bottom-0 left-0 right-0 h-14 pointer-events-none z-10"
+            style={{ background: 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.14))' }}
+          />
 
-          {/* Left arrow — desktop only */}
+          {/* ── LEFT ARROW ── */}
           <button
             onClick={goPrev}
             aria-label="Previous slide"
@@ -113,7 +179,7 @@ export default function HeroBanner() {
             <FiChevronLeft size={20} />
           </button>
 
-          {/* Right arrow — desktop only */}
+          {/* ── RIGHT ARROW ── */}
           <button
             onClick={goNext}
             aria-label="Next slide"
@@ -122,7 +188,7 @@ export default function HeroBanner() {
             <FiChevronRight size={20} />
           </button>
 
-          {/* Dot indicators — all screen sizes */}
+          {/* ── DOTS ── */}
           <div
             className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 sm:gap-2"
             role="tablist"
@@ -147,23 +213,12 @@ export default function HeroBanner() {
         </div>
       </section>
 
-      {/* ── MARQUEE STRIP — directly below slider ── */}
-      <style>{`
-        @keyframes marquee {
-          from { transform: translateX(0); }
-          to   { transform: translateX(-50%); }
-        }
-        .marquee-track {
-          animation: marquee 30s linear infinite;
-        }
-        .marquee-track:hover {
-          animation-play-state: paused;
-        }
-      `}</style>
-
-      <div className="w-full bg-gradient-to-r from-purple-700 via-pink-600 to-rose-600 py-3 overflow-hidden relative">
+      {/* ── MARQUEE STRIP ── */}
+      <div
+        className="w-full py-3 overflow-hidden relative"
+        style={{ background: 'linear-gradient(90deg,#E05C88 0%,#F8A5B5 50%,#E05C88 100%)' }}
+      >
         <div className="marquee-track flex whitespace-nowrap">
-          {/* Content repeated twice for seamless loop */}
           {[0, 1].map((repeat) => (
             <span key={repeat} className="flex items-center flex-shrink-0">
               {[
@@ -176,8 +231,12 @@ export default function HeroBanner() {
                 'New Arrivals Every Week',
                 'Secure & Encrypted Checkout',
               ].map((text, i) => (
-                <span key={`${repeat}-${i}`} className="inline-flex items-center gap-2 px-8 text-white text-sm font-sans font-medium">
-                  <span className="text-white/60 text-xs">✦</span>
+                <span
+                  key={`${repeat}-${i}`}
+                  className="inline-flex items-center gap-2 px-8 text-sm font-sans font-medium"
+                  style={{ color: '#FDF3F4' }}
+                >
+                  <span style={{ color: 'rgba(253,243,244,0.50)', fontSize: '10px' }}>✦</span>
                   {text}
                 </span>
               ))}

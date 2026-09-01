@@ -23,7 +23,7 @@ function Ticker() {
   const items = [...TICKER_MESSAGES, ...TICKER_MESSAGES]
   return (
     <div
-      className="w-full overflow-hidden border-y border-[#E9D5FF] bg-[#F3E8FF]/60"
+      className="w-full overflow-hidden border-y border-[#F5C8D4] bg-[#FEF0E3]/80"
       style={{ '--ticker-duration': '28s' }}
     >
       <div
@@ -37,9 +37,9 @@ function Ticker() {
       >
         {items.map((msg, i) => (
           <span key={i} className="inline-flex items-center gap-3 px-8 py-2.5">
-            <BadgePercent size={13} className="text-[#A855F7] flex-shrink-0" />
-            <span className="font-sans text-xs font-semibold tracking-wide text-[#6B21A8]">{msg}</span>
-            <span className="w-1 h-1 rounded-full bg-[#C084FC] flex-shrink-0" />
+            <BadgePercent size={13} className="text-[#E05C88] flex-shrink-0" />
+            <span className="font-sans text-xs font-semibold tracking-wide text-[#7B2447]">{msg}</span>
+            <span className="w-1 h-1 rounded-full bg-[#F8A5B5] flex-shrink-0" />
           </span>
         ))}
       </div>
@@ -61,12 +61,12 @@ function Ticker() {
 function TimerUnit({ value, label }) {
   return (
     <div className="flex flex-col items-center">
-      <div className="bg-[#A855F7] text-white rounded-xl px-3.5 py-2 min-w-[52px] text-center shadow-lg shadow-[#A855F7]/30">
+      <div className="bg-[#E05C88] text-white rounded-xl px-3.5 py-2 min-w-[52px] text-center shadow-lg shadow-[#E05C88]/30">
         <span className="font-mono text-2xl md:text-3xl font-bold leading-none tabular-nums">
           {String(value).padStart(2, '0')}
         </span>
       </div>
-      <span className="font-sans text-[10px] font-semibold tracking-[0.15em] uppercase text-[#C084FC] mt-1.5">
+      <span className="font-sans text-[10px] font-semibold tracking-[0.15em] uppercase text-[#F8A5B5] mt-1.5">
         {label}
       </span>
     </div>
@@ -75,7 +75,7 @@ function TimerUnit({ value, label }) {
 
 function TimerSep() {
   return (
-    <span className="text-[#A855F7] text-2xl font-bold leading-none pb-4 select-none">:</span>
+    <span className="text-[#E05C88] text-2xl font-bold leading-none pb-4 select-none">:</span>
   )
 }
 
@@ -168,7 +168,7 @@ function SaleCard({ item }) {
           {/* Quick-add cart button — appears on hover */}
           <button
             onClick={handleAddToCart}
-            className="absolute bottom-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-all duration-300 bg-[#A855F7] hover:bg-[#9333EA] text-white p-2 rounded-full shadow-lg transform translate-y-2 group-hover:translate-y-0"
+            className="absolute bottom-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-all duration-300 bg-[#E05C88] hover:bg-[#C94A74] text-white p-2 rounded-full shadow-lg transform translate-y-2 group-hover:translate-y-0"
             title="Add to Cart"
             aria-label={`Add ${product.name} to cart`}
           >
@@ -198,7 +198,7 @@ function SaleCard({ item }) {
               }}
             >
               {product.description}{' '}
-              <span className="text-purple-300 underline underline-offset-2 font-medium">More</span>
+              <span className="text-[#FBDBBB] underline underline-offset-2 font-medium">More</span>
             </p>
           )}
 
@@ -299,7 +299,7 @@ function MobileSaleSlider({ items }) {
             className={[
               'rounded-full transition-all duration-300',
               i === activeIdx
-                ? 'w-6 h-2.5 bg-[#A855F7]'
+                ? 'w-6 h-2.5 bg-[#E05C88]'
                 : 'w-2.5 h-2.5 bg-white/30 hover:bg-white/60',
             ].join(' ')}
           />
@@ -315,9 +315,9 @@ function MobileSaleSlider({ items }) {
 function SaleEndedBanner({ title }) {
   return (
     <div className="text-center py-10">
-      <div className="inline-flex items-center gap-2 bg-[#F3E8FF] border border-[#E9D5FF] rounded-2xl px-6 py-4">
-        <Clock size={18} className="text-[#C084FC]" />
-        <span className="font-sans text-sm font-semibold text-[#6B21A8]">
+      <div className="inline-flex items-center gap-2 bg-[#FEF0E3] border border-[#F5C8D4] rounded-2xl px-6 py-4">
+        <Clock size={18} className="text-[#F8A5B5]" />
+        <span className="font-sans text-sm font-semibold text-[#7B2447]">
           {title} has ended. Check back for future sales.
         </span>
       </div>
@@ -529,7 +529,7 @@ export default function FestivalSale() {
           <div className="flex items-center gap-4 mb-8">
             <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-white/20" />
             <div className="flex items-center gap-1.5 bg-white/10 border border-white/20 rounded-full px-3 py-1">
-              <BadgePercent size={13} className="text-[#C084FC]" />
+              <BadgePercent size={13} className="text-[#FBDBBB]" />
               <span className="font-sans text-[11px] font-bold text-white/80 tracking-wide uppercase">
                 Exclusive Deals
               </span>
@@ -564,7 +564,7 @@ export default function FestivalSale() {
               <div className="text-center mt-10">
                 <Link
                   href="/shop"
-                  className="inline-flex items-center gap-2 bg-[#A855F7] hover:bg-[#9333EA] text-white font-semibold text-sm px-8 py-3 rounded-full font-sans transition-all duration-200 hover:shadow-lg hover:shadow-[#A855F7]/40 hover:-translate-y-0.5"
+                  className="inline-flex items-center gap-2 bg-[#E05C88] hover:bg-[#C94A74] text-white font-semibold text-sm px-8 py-3 rounded-full font-sans transition-all duration-200 hover:shadow-lg hover:shadow-[#E05C88]/40 hover:-translate-y-0.5"
                 >
                   <ShoppingBag size={15} />
                   View All Sale Products

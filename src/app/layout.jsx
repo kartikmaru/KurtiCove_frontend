@@ -35,7 +35,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${playfair.variable} ${poppins.variable} ${dancing.variable}`}>
-      <body className="font-sans bg-[#FAF5FF] text-[#3B0764] antialiased">
+      <body className="font-sans bg-[#FCFAE0] text-[#7B2447] antialiased">
         <ReduxProvider>
           {/* Header renders on every page — fixed, floats above content */}
           <Header />
@@ -55,15 +55,15 @@ export default function RootLayout({ children }) {
             toastOptions={{
               duration: 3000,
               style: {
-                background: '#FAF5FF',
-                color: '#3B0764',
-                border: '1px solid #E9D5FF',
+                background: '#FCFAE0',
+                color: '#7B2447',
+                border: '1px solid #F5C8D4',
                 borderRadius: '12px',
                 fontFamily: 'Poppins, sans-serif',
                 fontSize: '13px',
               },
               success: {
-                iconTheme: { primary: '#A855F7', secondary: '#FAF5FF' },
+                iconTheme: { primary: '#E05C88', secondary: '#FCFAE0' },
               },
             }}
           />
