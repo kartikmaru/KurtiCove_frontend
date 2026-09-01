@@ -60,6 +60,8 @@ function VerifyOtpContent() {
         localStorage.setItem('kc_token', token)
         localStorage.setItem('kc_user', JSON.stringify(user))
         document.cookie = `auth_token=${token}; path=/; max-age=${30 * 24 * 3600}`
+        // Notify Header that auth state changed
+        window.dispatchEvent(new Event('kc-auth-changed'))
         await syncAndLoadCart(dispatch)
         toast.success('Email verified! Welcome to Kurti Cove 🌸')
         router.push('/')

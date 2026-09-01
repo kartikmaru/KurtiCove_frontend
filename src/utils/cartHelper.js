@@ -1,5 +1,5 @@
 import API from './Helper'
-import { loadUserCart, addtocart } from '../redux/features/CartSlice'
+import { loadUserCart, addtocart, removeItem as removeItemAction } from '../redux/features/CartSlice'
 
 /**
  * Called after login/OTP verify.
@@ -49,5 +49,29 @@ export const addToCartWithSync = async (product, qty = 1, dispatch) => {
     await API.post('/cart/add_to_cart', { productId: product._id, qty })
   } catch (err) {
     console.error('DB cart add failed (local still updated):', err)
+  }
+}
+
+/**
+ * Removes an item from both Redux store and DB cart (if logged in).
+ * Optimistic: Redux is updated immediately; DB call happens in background.
+ * On DB failure the item stays removed locally (next sync will reconcile).
+ *
+ * @param {string}   productId - The product _id to remove
+ * @param {function} dispatch  - Redux dispatch
+ */
+export const removeFromCartSync = async (productId, dispatch) => {
+  // Optimistic remove from Redux + localStorage immediately
+  dispatch(removeItemAction({ id: productId }))
+
+  // If not logged in, nothing more to do
+  const token = typeof window !== 'undefined' ? localStorage.getItem('kc_token') : null
+  if (!token) return
+
+  try {
+    // Backend DELETE /api/cart/remove expects productId in request body
+    await API.delete('/cart/remove', { data: { productId } })
+  } catch (err) {
+    console.error('DB cart remove failed (local already updated):', err)
   }
 }

@@ -30,6 +30,8 @@ function LoginForm() {
         localStorage.setItem('kc_token', token)
         localStorage.setItem('kc_user', JSON.stringify(user))
         document.cookie = `auth_token=${token}; path=/; max-age=${30 * 24 * 3600}`
+        // Notify Header (and any other listener) that auth state changed
+        window.dispatchEvent(new Event('kc-auth-changed'))
         await syncAndLoadCart(dispatch)
         toast.success(`Welcome back, ${user.name.split(' ')[0]}! 🌸`)
         const redirect = searchParams.get('redirect') || '/'

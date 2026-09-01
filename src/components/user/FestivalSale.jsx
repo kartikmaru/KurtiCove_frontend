@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import { useDispatch } from 'react-redux'
 import { Flame, Clock, BadgePercent, ShoppingBag, Sparkles, Star } from 'lucide-react'
-import API from '../../utils/Helper'
 import { addToCartWithSync } from '../../utils/cartHelper'
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -376,12 +375,22 @@ export default function FestivalSale() {
   useEffect(() => {
     const fetchSale = async () => {
       try {
-        const res = await API.get('/sale/active')
-        if (res.data.success && res.data.data) {
-          setSale(res.data.data)
+        // Use the raw BASE URL + fetch (not the axios instance) so a 401
+        // response from any auth interceptor never silently swallows the call.
+        const BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/'
+        const res  = await fetch(`${BASE}sale/active`, { cache: 'no-store' })
+        if (!res.ok) {
+          console.warn('FestivalSale: API returned', res.status)
+          setLoading(false)
+          return
+        }
+        const data = await res.json()
+        if (data.success && data.data) {
+          setSale(data.data)
         }
       } catch (err) {
-        console.error('FestivalSale fetch error:', err)
+        // Network error (e.g. Render cold-start) — fail silently, section hidden
+        console.warn('FestivalSale fetch error (section hidden):', err.message)
       } finally {
         setLoading(false)
       }

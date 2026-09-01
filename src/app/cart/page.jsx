@@ -2,9 +2,9 @@
 import { useEffect } from 'react'
 import Link from 'next/link'
 import { useSelector, useDispatch } from 'react-redux'
-import { qtyChange, removeItem, lstoCart } from '../../redux/features/CartSlice'
+import { qtyChange, lstoCart } from '../../redux/features/CartSlice'
+import { removeFromCartSync } from '../../utils/cartHelper'
 import { FiTrash2, FiMinus, FiPlus, FiShoppingBag } from 'react-icons/fi'
-import toast from 'react-hot-toast'
 
 export default function CartPage() {
   const dispatch = useDispatch()
@@ -18,9 +18,9 @@ export default function CartPage() {
     dispatch(qtyChange({ id, flag }))
   }
 
-  const handleRemove = (id, name) => {
-    dispatch(removeItem({ id }))
-    toast.success(`${name} removed from cart`)
+  const handleRemove = (id) => {
+    // Optimistic UI + DB delete via cartHelper
+    removeFromCartSync(id, dispatch)
   }
 
   return (
@@ -101,7 +101,7 @@ export default function CartPage() {
                           </button>
                         </div>
                         <button
-                          onClick={() => handleRemove(item._id, item.name)}
+                          onClick={() => handleRemove(item._id)}
                           className="text-red-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition-all"
                         >
                           <FiTrash2 size={15} />

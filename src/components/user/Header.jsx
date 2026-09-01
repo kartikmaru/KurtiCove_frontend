@@ -40,12 +40,28 @@ function HeaderInner() {
   const searchRef   = useRef(null)
   const searchInput = useRef(null)
 
-  /* ── Load user ───────────────────────────────────────────── */
+  /* ── Load user — and re-read whenever auth changes ───────── */
   useEffect(() => {
-    const token    = localStorage.getItem('kc_token')
-    const userData = localStorage.getItem('kc_user')
-    if (token && userData) {
-      try { setUser(JSON.parse(userData)) } catch {}
+    const readUser = () => {
+      const token    = localStorage.getItem('kc_token')
+      const userData = localStorage.getItem('kc_user')
+      if (token && userData) {
+        try { setUser(JSON.parse(userData)) } catch {}
+      } else {
+        setUser(null)
+      }
+    }
+
+    // Initial read on mount
+    readUser()
+
+    // Re-read whenever login/logout fires the custom event
+    window.addEventListener('kc-auth-changed', readUser)
+    // Also catch cross-tab storage changes
+    window.addEventListener('storage', readUser)
+    return () => {
+      window.removeEventListener('kc-auth-changed', readUser)
+      window.removeEventListener('storage', readUser)
     }
   }, [])
 
@@ -104,6 +120,7 @@ function HeaderInner() {
     document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
     document.cookie = 'jwt=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
     dispatch(resetCart())
+    window.dispatchEvent(new Event('kc-auth-changed'))
     window.location.href = '/'
   }
 
