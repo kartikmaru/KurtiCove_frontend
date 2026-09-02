@@ -16,7 +16,7 @@ const DESKTOP_SLIDES = [
   { src: '/hero/image1.png', alt: 'Kurti Cove Collection 1' },
   { src: '/hero/image2.png', alt: 'Kurti Cove Collection 2' },
   { src: '/hero/image3.png', alt: 'Kurti Cove Collection 3' },
-  { src: '/hero/image4.png', alt: 'Kurti Cove Collection 4' },
+  { src: '/hero/image4.jpg', alt: 'Kurti Cove Collection 4' },
 ]
 
 const MOBILE_SLIDES = [
@@ -174,7 +174,8 @@ export default function HeroBanner() {
           <button
             onClick={goPrev}
             aria-label="Previous slide"
-            className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/80 hover:bg-white items-center justify-center shadow-md transition-all duration-200 hover:scale-105 text-purple-700"
+            className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/80 hover:bg-white items-center justify-center shadow-md transition-all duration-200 hover:scale-105"
+            style={{ color: '#7B2447' }}
           >
             <FiChevronLeft size={20} />
           </button>
@@ -183,7 +184,8 @@ export default function HeroBanner() {
           <button
             onClick={goNext}
             aria-label="Next slide"
-            className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/80 hover:bg-white items-center justify-center shadow-md transition-all duration-200 hover:scale-105 text-purple-700"
+            className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/80 hover:bg-white items-center justify-center shadow-md transition-all duration-200 hover:scale-105"
+            style={{ color: '#7B2447' }}
           >
             <FiChevronRight size={20} />
           </button>
@@ -204,7 +206,7 @@ export default function HeroBanner() {
                 className={[
                   'rounded-full transition-all duration-300 focus:outline-none',
                   idx === current
-                    ? 'w-5 h-2 sm:w-7 sm:h-2.5 bg-purple-500 shadow-[0_0_6px_rgba(168,85,247,0.6)]'
+                    ? 'w-5 h-2 sm:w-7 sm:h-2.5 bg-[#E05C88] shadow-[0_0_6px_rgba(224,92,136,0.6)]'
                     : 'w-2 h-2 sm:w-2.5 sm:h-2.5 bg-white/60 hover:bg-white',
                 ].join(' ')}
               />

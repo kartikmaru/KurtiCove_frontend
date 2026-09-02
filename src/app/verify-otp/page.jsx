@@ -6,14 +6,24 @@ import API from '../../utils/Helper'
 import { syncAndLoadCart } from '../../utils/cartHelper'
 import toast from 'react-hot-toast'
 
-function VerifyOtpContent() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const dispatch = useDispatch()
-  const email = searchParams.get('email') || ''
+/* ── Palette ── */
+const ROSE     = '#E05C88'
+const BERRY    = '#7B2447'
+const MAUVE    = '#6B4553'
+const PINK     = '#F8A5B5'
+const CREAM    = '#FCFAE0'
+const BORDER   = '#F5C8D4'
+const PEACH_LT = '#FEF0E3'
+const CARD     = '#FFFAF5'
 
-  const [otp, setOtp] = useState(['', '', '', '', '', ''])
-  const [loading, setLoading] = useState(false)
+function VerifyOtpContent() {
+  const router       = useRouter()
+  const searchParams = useSearchParams()
+  const dispatch     = useDispatch()
+  const email        = searchParams.get('email') || ''
+
+  const [otp,       setOtp]       = useState(['', '', '', '', '', ''])
+  const [loading,   setLoading]   = useState(false)
   const [resending, setResending] = useState(false)
   const [countdown, setCountdown] = useState(60)
   const inputRefs = useRef([])
@@ -60,10 +70,9 @@ function VerifyOtpContent() {
         localStorage.setItem('kc_token', token)
         localStorage.setItem('kc_user', JSON.stringify(user))
         document.cookie = `auth_token=${token}; path=/; max-age=${30 * 24 * 3600}`
-        // Notify Header that auth state changed
         window.dispatchEvent(new Event('kc-auth-changed'))
         await syncAndLoadCart(dispatch)
-        toast.success('Email verified! Welcome to Kurti Cove 🌸')
+        toast.success('Email verified! Welcome to Kurti Cove.')
         router.push('/')
       }
     } catch (err) {
@@ -89,79 +98,96 @@ function VerifyOtpContent() {
   }
 
   return (
-    <>
-      <main className="min-h-screen bg-gradient-to-b from-[#FAF5FF] to-white flex items-center justify-center py-12 px-4">
-        <div className="w-full max-w-md">
-          <div className="bg-white rounded-[20px] border border-[#E9D5FF] shadow-card p-8 text-center">
-            <span className="text-5xl block mb-4">📧</span>
-            <h1 className="font-cursive text-3xl font-bold text-[#3B0764] mb-2">Verify Your Email</h1>
-            <p className="font-sans text-sm text-[#C084FC] mb-2">
-              We sent a 6-digit OTP to
-            </p>
-            <p className="font-sans text-sm font-semibold text-[#3B0764] mb-6 bg-[#F3E8FF] px-3 py-1.5 rounded-full inline-block">
-              {email}
-            </p>
+    <main className="min-h-screen flex items-center justify-center py-12 px-4"
+          style={{ background: `linear-gradient(160deg, ${CREAM} 0%, #fff7f0 100%)` }}>
+      <div className="w-full max-w-md">
+        <div className="bg-white rounded-[20px] p-8 text-center"
+             style={{ border: `1.5px solid ${BORDER}`, boxShadow: `0 8px 32px rgba(224,92,136,0.12)` }}>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* OTP inputs */}
-              <div className="flex gap-2 justify-center" onPaste={handlePaste}>
-                {otp.map((digit, i) => (
-                  <input
-                    key={i}
-                    ref={(el) => (inputRefs.current[i] = el)}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={1}
-                    value={digit}
-                    onChange={(e) => handleOtpChange(e.target.value, i)}
-                    onKeyDown={(e) => handleKeyDown(e, i)}
-                    className={`w-12 h-14 text-center text-xl font-bold border-2 rounded-xl font-sans text-[#3B0764] focus:outline-none transition-all ${
-                      digit ? 'border-[#A855F7] bg-[#FAF5FF]' : 'border-[#E9D5FF] bg-white focus:border-[#A855F7]'
-                    }`}
-                  />
-                ))}
-              </div>
+          {/* Icon */}
+          <div
+            className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+            style={{ background: `linear-gradient(135deg, ${PINK}, ${ROSE})` }}
+          >
+            <span className="text-white text-2xl">✉</span>
+          </div>
 
-              <button
-                type="submit"
-                disabled={loading || otp.join('').length !== 6}
-                className="w-full bg-[#A855F7] hover:bg-[#9333EA] disabled:opacity-60 text-white py-3.5 rounded-xl font-sans font-semibold text-sm transition-all hover:shadow-lg"
-              >
-                {loading ? 'Verifying...' : 'Verify OTP ✓'}
-              </button>
-            </form>
+          <h1 className="font-serif text-3xl font-bold mb-2" style={{ color: BERRY }}>
+            Verify Your Email
+          </h1>
+          <p className="font-sans text-sm mb-2" style={{ color: MAUVE }}>
+            We sent a 6-digit OTP to
+          </p>
+          <p className="font-sans text-sm font-semibold mb-6 px-3 py-1.5 rounded-full inline-block"
+             style={{ color: BERRY, background: PEACH_LT, border: `1px solid ${BORDER}` }}>
+            {email}
+          </p>
 
-            <div className="mt-5">
-              {countdown > 0 ? (
-                <p className="font-sans text-xs text-[#C084FC]">
-                  Resend OTP in <span className="font-bold text-[#A855F7]">{countdown}s</span>
-                </p>
-              ) : (
-                <button
-                  onClick={handleResend}
-                  disabled={resending}
-                  className="font-sans text-sm text-[#A855F7] hover:text-[#9333EA] font-medium transition-colors"
-                >
-                  {resending ? 'Sending...' : 'Resend OTP →'}
-                </button>
-              )}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* OTP inputs */}
+            <div className="flex gap-2 justify-center" onPaste={handlePaste}>
+              {otp.map((digit, i) => (
+                <input
+                  key={i}
+                  ref={(el) => (inputRefs.current[i] = el)}
+                  type="text" inputMode="numeric" maxLength={1}
+                  value={digit}
+                  onChange={(e) => handleOtpChange(e.target.value, i)}
+                  onKeyDown={(e) => handleKeyDown(e, i)}
+                  className="w-11 h-13 md:w-12 md:h-14 text-center text-xl font-bold border-2 rounded-xl font-sans outline-none transition-all"
+                  style={{
+                    borderColor: digit ? ROSE : BORDER,
+                    background:  digit ? PEACH_LT : CARD,
+                    color:       BERRY,
+                    height: '3.5rem',
+                  }}
+                />
+              ))}
             </div>
 
-            <p className="font-sans text-xs text-[#C084FC] mt-4">
-              OTP is valid for 10 minutes. Check spam folder if not received.
-            </p>
+            <button
+              type="submit"
+              disabled={loading || otp.join('').length !== 6}
+              className="w-full text-white py-3.5 rounded-xl font-sans font-semibold text-sm transition-all hover:shadow-lg disabled:opacity-60"
+              style={{ background: ROSE }}
+            >
+              {loading ? 'Verifying…' : 'Verify OTP'}
+            </button>
+          </form>
+
+          <div className="mt-5">
+            {countdown > 0 ? (
+              <p className="font-sans text-xs" style={{ color: MAUVE }}>
+                Resend OTP in{' '}
+                <span className="font-bold" style={{ color: ROSE }}>{countdown}s</span>
+              </p>
+            ) : (
+              <button
+                onClick={handleResend}
+                disabled={resending}
+                className="font-sans text-sm font-medium transition-colors"
+                style={{ color: ROSE }}
+              >
+                {resending ? 'Sending…' : 'Resend OTP →'}
+              </button>
+            )}
           </div>
+
+          <p className="font-sans text-xs mt-4" style={{ color: MAUVE }}>
+            OTP is valid for 10 minutes. Check spam folder if not received.
+          </p>
         </div>
-      </main>
-    </>
+      </div>
+    </main>
   )
 }
 
 export default function VerifyOtpPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[#FAF5FF] flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-[#A855F7] border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center" style={{ background: CREAM }}>
+        <div className="w-10 h-10 border-4 border-t-transparent rounded-full animate-spin"
+             style={{ borderColor: ROSE, borderTopColor: 'transparent' }} />
       </div>
     }>
       <VerifyOtpContent />

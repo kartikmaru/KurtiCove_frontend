@@ -40,7 +40,7 @@
   --font-family-sans:    Poppins, ui-sans-serif, system-ui, sans-serif;
   --font-family-cursive: "Dancing Script", cursive;
 
-  /* ── Shadows — rose glow instead of purple ── */
+  /* ── Shadows — rose glow ── */
   --shadow-card:       0 4px 20px rgba(224, 92, 136, 0.10);
   --shadow-card-hover: 0 8px 30px rgba(224, 92, 136, 0.20);
 

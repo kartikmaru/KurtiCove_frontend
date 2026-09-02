@@ -286,7 +286,7 @@ function MobileSaleSlider({ items }) {
         </div>
       </div>
 
-      {/* Pagination dots — purple pill for active, small circle for rest */}
+      {/* Pagination dots */}
       <div className="flex justify-center gap-2 mt-5" aria-label="Festival sale slider navigation">
         {items.map((_, i) => (
           <button
@@ -452,10 +452,10 @@ export default function FestivalSale() {
           aria-hidden="true"
         />
 
-        {/* Optional: subtle purple tint on top of the black overlay */}
+        {/* Subtle rose tint on top of the black overlay */}
         <div
           className="absolute inset-0 pointer-events-none"
-          style={{ background: 'rgba(59,7,100,0.18)' }}
+          style={{ background: 'rgba(123,36,71,0.15)' }}
           aria-hidden="true"
         />
 
@@ -469,7 +469,7 @@ export default function FestivalSale() {
               {/* "SALE" eyebrow with icon */}
               <div className="flex items-center gap-2.5 mb-3">
                 <div className="flex items-center gap-1.5 bg-white/10 border border-white/20 rounded-full px-3.5 py-1.5">
-                  <Flame size={14} className="text-[#E9D5FF]" strokeWidth={2.5} />
+                  <Flame size={14} className="text-[#FBDBBB]" strokeWidth={2.5} />
                   <span className="font-sans text-xs font-bold tracking-[0.25em] uppercase text-white/80">
                     Sale
                   </span>
@@ -487,7 +487,7 @@ export default function FestivalSale() {
 
               {/* Supporting line */}
               <p className="font-sans text-sm text-white/70 flex items-center gap-2">
-                <Sparkles size={13} className="text-[#C084FC] flex-shrink-0" />
+                <Sparkles size={13} className="text-[#F8A5B5] flex-shrink-0" />
                 {sale.subtitle || 'Limited time offers on handpicked styles'}
               </p>
             </div>

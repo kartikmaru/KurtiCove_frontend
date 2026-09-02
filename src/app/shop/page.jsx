@@ -5,8 +5,21 @@ import Link from 'next/link'
 import {
   Search, X, Filter, Tag, ChevronDown,
   Star, SlidersHorizontal, ChevronLeft, ChevronRight,
-  IndianRupee, Layers, Ruler, Check,
+  IndianRupee, Layers, Ruler, Check, ShoppingBag,
 } from 'lucide-react'
+import { useDispatch } from 'react-redux'
+import { addToCartWithSync } from '../../utils/cartHelper'
+
+/* ─── Palette tokens ─── */
+const ROSE   = '#E05C88'
+const BERRY  = '#7B2447'
+const MAUVE  = '#6B4553'
+const PINK   = '#F8A5B5'
+const PEACH  = '#FBDBBB'
+const CREAM  = '#FCFAE0'
+const BORDER = '#F5C8D4'
+const CARD   = '#FFFAF5'
+const PEACH_LT = '#FEF0E3'
 
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
 const BASE  = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/'
@@ -25,42 +38,40 @@ const COLLECTION_OPTIONS = [
 ]
 
 /* ═══════════════════════════════════════════════════════════════════
-   PROMO BANNER SLIDER
-   Uses /hero/image1-4.png from public/hero/.
-   Crossfade + subtle translateY between slides, auto-advances 4s.
+   PROMO BANNER SLIDER  — pastel overlays, rose CTA button
 ═══════════════════════════════════════════════════════════════════ */
 const BANNERS = [
   {
-    src: '/hero/image1.png',
+    src:      '/hero/image1.png',
     headline: 'New Season Collection',
-    sub: 'Fresh kurtis, handpicked for you',
-    cta: 'Explore Now',
-    href: '/shop?filter=isNewArrival',
-    overlay: 'rgba(59,7,100,0.38)',
+    sub:      'Fresh kurtis, handpicked for you',
+    cta:      'Explore Now',
+    href:     '/shop?filter=isNewArrival',
+    overlay:  'rgba(123,36,71,0.35)',
   },
   {
-    src: '/hero/image2.png',
+    src:      '/hero/image2.png',
     headline: 'Best Sellers',
-    sub: 'Most loved by 10,000+ customers',
-    cta: 'Shop Best Sellers',
-    href: '/shop?filter=isBestSeller',
-    overlay: 'rgba(30,10,60,0.42)',
+    sub:      'Most loved by 10,000+ customers',
+    cta:      'Shop Best Sellers',
+    href:     '/shop?filter=isBestSeller',
+    overlay:  'rgba(107,69,83,0.38)',
   },
   {
-    src: '/hero/image3.png',
+    src:      '/hero/image3.png',
     headline: 'Festival Styles',
-    sub: 'Celebrate every occasion in elegance',
-    cta: 'View Collection',
-    href: '/shop',
-    overlay: 'rgba(80,10,80,0.40)',
+    sub:      'Celebrate every occasion in elegance',
+    cta:      'View Collection',
+    href:     '/shop',
+    overlay:  'rgba(123,36,71,0.32)',
   },
   {
-    src: '/hero/image4.png',
+    src:      '/hero/image4.jpg',
     headline: 'Up to 70% OFF',
-    sub: 'Limited time — grab your favourites',
-    cta: 'Shop Sale',
-    href: '/shop?sort=desc',
-    overlay: 'rgba(20,10,50,0.44)',
+    sub:      'Limited time — grab your favourites',
+    cta:      'Shop Sale',
+    href:     '/shop?sort=desc',
+    overlay:  'rgba(107,69,83,0.40)',
   },
 ]
 
@@ -70,25 +81,18 @@ function PromoBannerSlider() {
   const timerRef                = useRef(null)
   const total                   = BANNERS.length
 
-  // Auto-advance only — no manual goTo needed since arrows are removed
   useEffect(() => {
     timerRef.current = setInterval(() => setCurrent((c) => (c + 1) % total), 4000)
     return () => clearInterval(timerRef.current)
   }, [total])
 
-  // Lag visible by 30ms so the CSS fade transition actually plays
   useEffect(() => {
     const t = setTimeout(() => setVisible(current), 30)
     return () => clearTimeout(t)
   }, [current])
 
   return (
-    /*
-      Full-width hero — slimmer than before.
-      Height: 180px mobile, 260px tablet, 360px desktop.
-    */
     <div className="relative w-full h-[180px] sm:h-[260px] md:h-[360px] overflow-hidden">
-      {/* Slides */}
       {BANNERS.map((b, i) => (
         <div
           key={i}
@@ -101,32 +105,20 @@ function PromoBannerSlider() {
           }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={b.src}
-            alt={b.headline}
-            className="w-full h-full object-cover object-center"
-            draggable={false}
-          />
-
-          {/* Black overlay for legibility */}
-          <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.45)' }} />
-
-          {/* Per-slide tint on top */}
+          <img src={b.src} alt={b.headline} className="w-full h-full object-cover object-center" draggable={false} />
+          <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.38)' }} />
           <div className="absolute inset-0" style={{ background: b.overlay }} />
 
-          {/* Text content */}
           <div className="absolute inset-0 flex flex-col justify-center px-6 sm:px-10 md:px-16 pb-6">
-            <p className="font-sans text-white/55 text-[10px] sm:text-xs tracking-[0.25em] uppercase mb-1.5 font-semibold">
+            <p className="font-sans text-white/60 text-[10px] sm:text-xs tracking-[0.25em] uppercase mb-1.5 font-semibold">
               Kurti Cove
             </p>
-
-            {/* Gradient headline — white → lavender → warm rose */}
             <h2
               className="font-bold leading-tight mb-2.5"
               style={{
                 fontFamily: 'var(--font-playfair), serif',
                 fontSize: 'clamp(1.35rem, 4.5vw, 2.75rem)',
-                background: 'linear-gradient(100deg, #ffffff 0%, #E9D5FF 45%, #F9A8D4 100%)',
+                background: `linear-gradient(100deg, #ffffff 0%, ${PINK} 55%, ${PEACH} 100%)`,
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
@@ -134,12 +126,10 @@ function PromoBannerSlider() {
             >
               {b.headline}
             </h2>
-
-            {/* Sub-text gradient — slightly muted */}
             <p
               className="font-sans text-sm mb-4 hidden sm:block max-w-xs"
               style={{
-                background: 'linear-gradient(90deg, rgba(255,255,255,0.80) 0%, rgba(233,213,255,0.70) 100%)',
+                background: `linear-gradient(90deg, rgba(255,255,255,0.80) 0%, rgba(251,219,187,0.70) 100%)`,
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
@@ -147,10 +137,10 @@ function PromoBannerSlider() {
             >
               {b.sub}
             </p>
-
             <Link
               href={b.href}
-              className="self-start inline-flex items-center gap-2 bg-white text-[#7C3AED] font-sans font-bold text-xs sm:text-sm px-5 py-2 rounded-full shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
+              className="self-start inline-flex items-center gap-2 font-sans font-bold text-xs sm:text-sm px-5 py-2 rounded-full shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
+              style={{ background: ROSE, color: '#fff' }}
             >
               {b.cta} <ChevronRight size={13} strokeWidth={2.5} />
             </Link>
@@ -158,16 +148,14 @@ function PromoBannerSlider() {
         </div>
       ))}
 
-      {/* Bottom fade — subtle, shorter, lighter so it just softens the edge */}
+      {/* Bottom fade into cream */}
       <div
         className="absolute bottom-0 left-0 right-0 h-10 pointer-events-none z-10"
-        style={{
-          background: 'linear-gradient(to bottom, transparent 0%, rgba(250,245,255,0.85) 100%)',
-        }}
+        style={{ background: `linear-gradient(to bottom, transparent 0%, ${CREAM}cc 100%)` }}
         aria-hidden="true"
       />
 
-      {/* Dots — above the fade */}
+      {/* Dots */}
       <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 z-20 flex gap-1.5">
         {BANNERS.map((_, i) => (
           <button
@@ -190,29 +178,23 @@ function PromoBannerSlider() {
 
 /* ═══════════════════════════════════════════════════════════════════
    STAR RATING DISPLAY
-   Shows filled / half / empty Lucide Star icons based on avgRating.
 ═══════════════════════════════════════════════════════════════════ */
 function StarDisplay({ rating, count }) {
   if (rating == null) return null
-  const stars = [1, 2, 3, 4, 5]
   return (
     <div className="flex items-center gap-1">
       <div className="flex gap-0.5">
-        {stars.map((s) => {
-          const filled = rating >= s
-          const half   = !filled && rating >= s - 0.5
-          return (
-            <Star
-              key={s}
-              size={11}
-              strokeWidth={1.5}
-              fill={filled ? '#f59e0b' : half ? 'url(#half)' : 'none'}
-              className={filled || half ? 'text-amber-400' : 'text-gray-300'}
-            />
-          )
-        })}
+        {[1,2,3,4,5].map((s) => (
+          <Star
+            key={s}
+            size={10}
+            strokeWidth={1.5}
+            fill={rating >= s ? '#f59e0b' : 'none'}
+            className={rating >= s ? 'text-amber-400' : 'text-gray-300'}
+          />
+        ))}
       </div>
-      <span className="font-sans text-[10px] text-gray-400 leading-none">
+      <span className="font-sans text-[10px] leading-none" style={{ color: MAUVE }}>
         {rating.toFixed(1)}
         {count != null && <span className="ml-0.5">({count})</span>}
       </span>
@@ -221,10 +203,8 @@ function StarDisplay({ rating, count }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   SHOP PRODUCT CARD  — shop-page only
-   • Serif title, gradient discount pill, star rating
-   • NO add-to-cart button — clicking navigates to product details
-     where the user selects size/colour first
+   SHOP PRODUCT CARD  — pastel theme, no cart button (navigate to PDP)
+   Mobile: slightly smaller paddings & fonts via responsive classes
 ═══════════════════════════════════════════════════════════════════ */
 function ShopProductCard({ product }) {
   const displayPrice = product.discountPrice || product.price
@@ -235,80 +215,91 @@ function ShopProductCard({ product }) {
 
   return (
     <Link href={`/product/${product._id}`} className="group block">
-      <div className="bg-white rounded-2xl overflow-hidden border border-[#E9D5FF] shadow-sm hover:shadow-[0_8px_28px_rgba(168,85,247,0.18)] transition-all duration-300 hover:-translate-y-1.5">
-
+      <div
+        className="bg-white rounded-[14px] overflow-hidden transition-all duration-300 hover:-translate-y-1 flex flex-col h-full"
+        style={{ border: `1px solid ${BORDER}`, boxShadow: `0 2px 10px rgba(224,92,136,0.08)` }}
+        onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 8px 28px rgba(224,92,136,0.20)' }}
+        onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 2px 10px rgba(224,92,136,0.08)' }}
+      >
         {/* Image */}
-        <div className="relative aspect-[3/4] bg-[#F3E8FF] overflow-hidden">
+        <div className="relative aspect-[3/4] overflow-hidden rounded-t-[13px]" style={{ background: PEACH_LT }}>
           {product.images?.[0] ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={product.images[0]}
               alt={product.name}
-              className="w-full h-full object-contain group-hover:scale-[1.04] transition-transform duration-500"
+              className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-[1.04]"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <Tag size={28} className="text-[#C084FC] opacity-30" />
+              <Tag size={24} style={{ color: PINK, opacity: 0.4 }} />
             </div>
           )}
 
-          {/* Gradient discount pill — top-left */}
-          {hasDiscount && (
-            <div
-              className="absolute top-2 left-2 z-10 px-2.5 py-1 rounded-full shadow-md"
-              style={{ background: 'linear-gradient(135deg,#7C3AED,#A855F7)' }}
-            >
-              <span className="font-sans font-black text-white text-[10px] leading-none tracking-tight">
-                {discountPct}% OFF
-              </span>
-            </div>
-          )}
+          {/* Badges */}
+          <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
+            {product.isNewArrival && (
+              <span className="text-[9px] md:text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm leading-none"
+                    style={{ background: '#B5EDDB', color: BERRY }}>NEW</span>
+            )}
+            {product.isBestSeller && (
+              <span className="text-[9px] md:text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm leading-none"
+                    style={{ background: PEACH, color: BERRY }}>BEST SELLER</span>
+            )}
+            {hasDiscount && (
+              <span className="text-[9px] md:text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm leading-none"
+                    style={{ background: ROSE, color: '#fff' }}>{discountPct}% OFF</span>
+            )}
+          </div>
 
-          {/* Out of stock overlay */}
+          {/* Out of stock */}
           {product.stock === 0 && (
-            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-              <span className="bg-white text-[#3B0764] text-xs font-semibold px-3 py-1 rounded-full">
-                Out of Stock
-              </span>
+            <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
+              <span className="bg-white text-[10px] md:text-xs font-semibold px-3 py-1 rounded-full"
+                    style={{ color: BERRY }}>Out of Stock</span>
             </div>
           )}
         </div>
 
         {/* Details */}
-        <div className="p-3">
-          {/* Serif product title */}
+        <div className="p-2.5 md:p-3 flex flex-col gap-1 flex-1">
           <h3
-            className="text-sm font-semibold text-[#3B0764] line-clamp-1 mb-1 leading-snug"
-            style={{ fontFamily: 'var(--font-playfair), serif' }}
+            className="text-[12px] md:text-sm font-semibold line-clamp-1 leading-snug font-sans"
+            style={{ color: BERRY, fontFamily: 'var(--font-playfair), serif' }}
           >
             {product.name}
           </h3>
 
-          {/* 2-line description */}
           {product.description && (
             <p
-              className="text-[11px] text-gray-400 font-sans leading-snug mb-1.5"
-              style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+              className="text-[10px] md:text-[11px] font-sans leading-snug"
+              style={{
+                color: MAUVE,
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+              }}
             >
-              {product.description}{' '}
-              <span className="text-purple-400 font-medium underline underline-offset-1">More</span>
+              {product.description}
             </p>
           )}
 
-          {/* Star rating */}
           {product.avgRating != null && (
-            <div className="mb-1.5">
+            <div className="mt-0.5">
               <StarDisplay rating={product.avgRating} count={product.reviewCount} />
             </div>
           )}
 
+          <div className="flex-1" />
+
           {/* Price */}
-          <div className="flex items-center gap-2 flex-wrap mt-0.5">
-            <span className="font-semibold text-[#7C3AED] text-sm font-sans">
+          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+            <span className="font-semibold text-[13px] md:text-sm font-sans" style={{ color: ROSE }}>
               ₹{displayPrice.toLocaleString()}
             </span>
             {hasDiscount && (
-              <span className="text-xs text-gray-400 line-through font-sans font-normal">
+              <span className="text-[10px] md:text-xs line-through font-sans font-normal" style={{ color: MAUVE }}>
                 ₹{product.price.toLocaleString()}
               </span>
             )}
@@ -320,7 +311,7 @@ function ShopProductCard({ product }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   SORT DROPDOWN  — sits above product grid, top-right
+   SORT DROPDOWN  — pastel themed
 ═══════════════════════════════════════════════════════════════════ */
 function SortDropdown({ value, onChange }) {
   const [open, setOpen] = useState(false)
@@ -337,28 +328,36 @@ function SortDropdown({ value, onChange }) {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className={`inline-flex items-center gap-1.5 border rounded-xl px-2.5 py-1.5 md:px-3.5 md:py-2 text-[11px] md:text-xs font-semibold font-sans transition-all duration-200 bg-white ${
-          open
-            ? 'border-[#A855F7] text-[#A855F7] ring-2 ring-[#A855F7]/20'
-            : 'border-[#E9D5FF] text-[#3B0764] hover:border-[#A855F7] hover:text-[#A855F7]'
-        }`}
+        className="inline-flex items-center gap-1.5 border rounded-xl px-2.5 py-1.5 md:px-3.5 md:py-2 text-[11px] md:text-xs font-semibold font-sans transition-all duration-200 bg-white"
+        style={{
+          borderColor: open ? ROSE : BORDER,
+          color:       open ? ROSE : BERRY,
+          boxShadow:   open ? `0 0 0 2px ${ROSE}22` : 'none',
+        }}
       >
         <SlidersHorizontal size={11} strokeWidth={2} className="md:w-[13px] md:h-[13px]" />
         <span>{current.label}</span>
-        <ChevronDown size={11} strokeWidth={2.5} className={`md:w-[13px] md:h-[13px] transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown
+          size={11} strokeWidth={2.5}
+          className={`md:w-[13px] md:h-[13px] transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+        />
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1.5 z-30 bg-white border border-[#E9D5FF] rounded-xl shadow-xl shadow-purple-100/40 min-w-[180px] overflow-hidden">
+        <div
+          className="absolute right-0 top-full mt-1.5 z-30 bg-white rounded-xl shadow-xl min-w-[180px] overflow-hidden"
+          style={{ border: `1px solid ${BORDER}` }}
+        >
           {SORT_OPTIONS.map((opt) => (
             <button
               key={opt.value}
               onClick={() => { onChange(opt.value); setOpen(false) }}
-              className={`w-full text-left px-4 py-2.5 text-xs font-sans transition-colors ${
-                opt.value === value
-                  ? 'bg-[#F3E8FF] text-[#A855F7] font-semibold'
-                  : 'text-[#3B0764] hover:bg-[#FAF5FF] hover:text-[#A855F7]'
-              }`}
+              className="w-full text-left px-4 py-2.5 text-xs font-sans transition-colors"
+              style={{
+                background: opt.value === value ? PEACH_LT : 'white',
+                color:      opt.value === value ? ROSE : BERRY,
+                fontWeight: opt.value === value ? 600 : 400,
+              }}
             >
               {opt.label}
             </button>
@@ -370,7 +369,7 @@ function SortDropdown({ value, onChange }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   CATEGORY PILLS  — horizontal scroll strip
+   CATEGORY PILLS  — pastel active state
 ═══════════════════════════════════════════════════════════════════ */
 function CategoryPills({ activeCategory, onSelect }) {
   const [categories, setCategories] = useState([])
@@ -392,7 +391,8 @@ function CategoryPills({ activeCategory, onSelect }) {
     return (
       <div className="flex gap-2 overflow-x-hidden pb-1">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-8 w-24 bg-purple-100 rounded-full animate-pulse flex-shrink-0" />
+          <div key={i} className="h-8 w-24 rounded-full animate-pulse flex-shrink-0"
+               style={{ background: PEACH_LT }} />
         ))}
       </div>
     )
@@ -403,11 +403,12 @@ function CategoryPills({ activeCategory, onSelect }) {
     <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide snap-x" style={{ scrollbarWidth: 'none' }}>
       <button
         onClick={() => onSelect('')}
-        className={`flex-shrink-0 snap-start inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 ${
+        className="flex-shrink-0 snap-start inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200"
+        style={
           !activeCategory
-            ? 'bg-[#A855F7] border-[#A855F7] text-white shadow-md shadow-purple-200'
-            : 'bg-white border-[#E9D5FF] text-[#3B0764] hover:border-[#A855F7] hover:text-[#A855F7]'
-        }`}
+            ? { background: ROSE, borderColor: ROSE, color: '#fff', boxShadow: `0 2px 8px ${ROSE}44` }
+            : { background: 'white', borderColor: BORDER, color: BERRY }
+        }
       >
         All
       </button>
@@ -415,17 +416,23 @@ function CategoryPills({ activeCategory, onSelect }) {
         <button
           key={name}
           onClick={() => onSelect(name === activeCategory ? '' : name)}
-          className={`flex-shrink-0 snap-start inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 whitespace-nowrap ${
+          className="flex-shrink-0 snap-start inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 whitespace-nowrap"
+          style={
             activeCategory === name
-              ? 'bg-[#A855F7] border-[#A855F7] text-white shadow-md shadow-purple-200'
-              : 'bg-white border-[#E9D5FF] text-[#3B0764] hover:border-[#A855F7] hover:text-[#A855F7]'
-          }`}
+              ? { background: ROSE, borderColor: ROSE, color: '#fff', boxShadow: `0 2px 8px ${ROSE}44` }
+              : { background: 'white', borderColor: BORDER, color: BERRY }
+          }
         >
           <Tag size={11} />
           {name}
-          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-normal ${
-            activeCategory === name ? 'bg-white/25 text-white' : 'bg-purple-50 text-purple-400'
-          }`}>
+          <span
+            className="text-[10px] px-1.5 py-0.5 rounded-full font-normal"
+            style={
+              activeCategory === name
+                ? { background: 'rgba(255,255,255,0.25)', color: '#fff' }
+                : { background: PEACH_LT, color: MAUVE }
+            }
+          >
             {count}
           </span>
         </button>
@@ -435,7 +442,7 @@ function CategoryPills({ activeCategory, onSelect }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   SIDEBAR FILTER PANEL  — polished elevated card
+   SIDEBAR FILTER PANEL  — pastel themed
 ═══════════════════════════════════════════════════════════════════ */
 function FilterSidebar({ filters, updateFilter, clearFilters, hasActiveFilters, onClose, isDrawer }) {
   const [searchInput,   setSearchInput]   = useState(filters.search)
@@ -443,7 +450,6 @@ function FilterSidebar({ filters, updateFilter, clearFilters, hasActiveFilters, 
   const [maxPriceInput, setMaxPriceInput] = useState(filters.maxPrice)
   const searchDebounce = useRef(null)
 
-  // Live search — debounced 300ms
   useEffect(() => {
     clearTimeout(searchDebounce.current)
     searchDebounce.current = setTimeout(() => {
@@ -453,7 +459,6 @@ function FilterSidebar({ filters, updateFilter, clearFilters, hasActiveFilters, 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchInput])
 
-  // Sync local inputs when filters are cleared externally
   useEffect(() => { setSearchInput(filters.search) },     [filters.search])
   useEffect(() => { setMinPriceInput(filters.minPrice) }, [filters.minPrice])
   useEffect(() => { setMaxPriceInput(filters.maxPrice) }, [filters.maxPrice])
@@ -463,32 +468,38 @@ function FilterSidebar({ filters, updateFilter, clearFilters, hasActiveFilters, 
     updateFilter('maxPrice', maxPriceInput)
   }
 
-  // Section heading — icon + label with a bottom rule
   const SectionHead = ({ icon: Icon, text }) => (
     <div className="flex items-center gap-2 mb-3">
-      <div className="flex items-center justify-center w-6 h-6 rounded-lg bg-[#F3E8FF] flex-shrink-0">
-        <Icon size={12} className="text-[#A855F7]" strokeWidth={2.5} />
+      <div className="flex items-center justify-center w-6 h-6 rounded-lg flex-shrink-0"
+           style={{ background: PEACH_LT }}>
+        <Icon size={12} strokeWidth={2.5} style={{ color: ROSE }} />
       </div>
-      <p className="font-sans text-[11px] font-bold text-[#6B21A8] uppercase tracking-[0.16em] flex-1">
+      <p className="font-sans text-[11px] font-bold uppercase tracking-[0.16em] flex-1"
+         style={{ color: BERRY }}>
         {text}
       </p>
     </div>
   )
 
-  const Divider = () => <div className="border-t border-[#F3E8FF] my-4" />
+  const Divider = () => <div className="border-t my-4" style={{ borderColor: BORDER }} />
+
+  const inputCls = "flex items-center gap-2 border rounded-xl px-3 py-2.5 transition-all"
+  const inputStyle = { borderColor: BORDER, background: CARD }
 
   return (
     <div className={isDrawer ? 'h-full flex flex-col' : ''}>
 
       {/* Drawer header */}
       {isDrawer && (
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#E9D5FF] bg-[#FAF5FF]">
-          <span className="font-bold text-[#3B0764] text-base" style={{ fontFamily: 'var(--font-playfair), serif' }}>
+        <div className="flex items-center justify-between px-5 py-4 border-b"
+             style={{ borderColor: BORDER, background: PEACH_LT }}>
+          <span className="font-bold text-base" style={{ fontFamily: 'var(--font-playfair), serif', color: BERRY }}>
             Filters
           </span>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-purple-100 text-[#C084FC] hover:text-[#A855F7] transition-colors"
+            className="p-1.5 rounded-full transition-colors"
+            style={{ color: PINK }}
             aria-label="Close filters"
           >
             <X size={18} />
@@ -496,22 +507,22 @@ function FilterSidebar({ filters, updateFilter, clearFilters, hasActiveFilters, 
         </div>
       )}
 
-      {/* Body */}
       <div className={`p-4 ${isDrawer ? 'flex-1 overflow-y-auto' : ''}`}>
 
-        {/* ── Search ── */}
+        {/* Search */}
         <SectionHead icon={Search} text="Search" />
-        <div className="flex items-center gap-2 border border-[#E9D5FF] rounded-xl px-3 py-2.5 bg-[#FAF5FF] focus-within:ring-2 focus-within:ring-[#A855F7]/25 focus-within:border-[#A855F7] transition-all">
-          <Search size={12} className="text-[#C084FC] flex-shrink-0" />
+        <div className={inputCls} style={inputStyle}>
+          <Search size={12} className="flex-shrink-0" style={{ color: PINK }} />
           <input
             type="text"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Search kurtis…"
-            className="flex-1 text-xs text-[#3B0764] bg-transparent outline-none font-sans placeholder-[#C084FC]"
+            className="flex-1 text-xs bg-transparent outline-none font-sans"
+            style={{ color: BERRY }}
           />
           {searchInput && (
-            <button onClick={() => setSearchInput('')} className="text-[#C084FC] hover:text-[#A855F7] transition-colors">
+            <button onClick={() => setSearchInput('')} style={{ color: PINK }}>
               <X size={11} />
             </button>
           )}
@@ -519,39 +530,37 @@ function FilterSidebar({ filters, updateFilter, clearFilters, hasActiveFilters, 
 
         <Divider />
 
-        {/* ── Price Range ── */}
+        {/* Price Range */}
         <SectionHead icon={IndianRupee} text="Price Range" />
         <div className="flex items-stretch gap-2 mb-3">
-          <div className="flex-1 border border-[#E9D5FF] rounded-xl px-3 py-2 bg-[#FAF5FF] focus-within:ring-2 focus-within:ring-[#A855F7]/25 focus-within:border-[#A855F7] transition-all">
-            <p className="text-[9px] text-[#C084FC] font-sans font-semibold uppercase tracking-wide mb-0.5">Min ₹</p>
-            <input
-              type="number" min={0} value={minPriceInput}
-              onChange={(e) => setMinPriceInput(e.target.value)}
-              placeholder="0"
-              className="w-full text-xs text-[#3B0764] bg-transparent outline-none font-sans"
-            />
-          </div>
-          <div className="flex items-center text-[#C084FC] text-xs font-sans self-center">—</div>
-          <div className="flex-1 border border-[#E9D5FF] rounded-xl px-3 py-2 bg-[#FAF5FF] focus-within:ring-2 focus-within:ring-[#A855F7]/25 focus-within:border-[#A855F7] transition-all">
-            <p className="text-[9px] text-[#C084FC] font-sans font-semibold uppercase tracking-wide mb-0.5">Max ₹</p>
-            <input
-              type="number" min={0} value={maxPriceInput}
-              onChange={(e) => setMaxPriceInput(e.target.value)}
-              placeholder="Any"
-              className="w-full text-xs text-[#3B0764] bg-transparent outline-none font-sans"
-            />
-          </div>
+          {[
+            { label: 'Min ₹', val: minPriceInput, set: setMinPriceInput, ph: '0' },
+            { label: 'Max ₹', val: maxPriceInput, set: setMaxPriceInput, ph: 'Any' },
+          ].map((f, idx) => (
+            <div key={idx} className="flex-1 border rounded-xl px-3 py-2 transition-all"
+                 style={{ borderColor: BORDER, background: CARD }}>
+              <p className="text-[9px] font-sans font-semibold uppercase tracking-wide mb-0.5"
+                 style={{ color: PINK }}>{f.label}</p>
+              <input
+                type="number" min={0} value={f.val} placeholder={f.ph}
+                onChange={(e) => f.set(e.target.value)}
+                className="w-full text-xs bg-transparent outline-none font-sans"
+                style={{ color: BERRY }}
+              />
+            </div>
+          ))}
         </div>
         <button
           onClick={applyPrice}
-          className="w-full flex items-center justify-center gap-1.5 bg-[#A855F7] hover:bg-[#9333EA] active:scale-95 text-white py-2 rounded-xl text-xs font-semibold font-sans transition-all"
+          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold font-sans transition-all active:scale-95 text-white"
+          style={{ background: ROSE }}
         >
           <Check size={12} strokeWidth={2.5} /> Apply Price Filter
         </button>
 
         <Divider />
 
-        {/* ── Collection ── */}
+        {/* Collection */}
         <SectionHead icon={Layers} text="Collection" />
         <div className="space-y-0.5 mb-1">
           {COLLECTION_OPTIONS.map((opt) => {
@@ -560,17 +569,14 @@ function FilterSidebar({ filters, updateFilter, clearFilters, hasActiveFilters, 
               <button
                 key={opt.value}
                 onClick={() => updateFilter('filter', opt.value)}
-                className={`w-full text-left px-3 py-2 rounded-lg text-xs font-sans font-medium transition-all duration-150 flex items-center gap-2 ${
-                  active
-                    ? 'bg-[#A855F7] text-white'
-                    : 'text-[#3B0764] hover:bg-[#F3E8FF] hover:text-[#A855F7]'
-                }`}
+                className="w-full text-left px-3 py-2 rounded-lg text-xs font-sans font-medium transition-all duration-150 flex items-center gap-2"
+                style={{
+                  background: active ? ROSE : 'transparent',
+                  color:      active ? '#fff' : BERRY,
+                }}
               >
-                <span
-                  className={`w-2 h-2 rounded-full flex-shrink-0 border transition-all ${
-                    active ? 'bg-white border-white' : 'border-[#C084FC]'
-                  }`}
-                />
+                <span className="w-2 h-2 rounded-full flex-shrink-0 border transition-all"
+                      style={active ? { background: '#fff', borderColor: '#fff' } : { borderColor: PINK }} />
                 {opt.label}
               </button>
             )
@@ -579,25 +585,25 @@ function FilterSidebar({ filters, updateFilter, clearFilters, hasActiveFilters, 
 
         <Divider />
 
-        {/* ── Size ── */}
+        {/* Size */}
         <SectionHead icon={Ruler} text="Size" />
         <div className="flex flex-wrap gap-1.5">
           {SIZES.map((s) => (
             <button
               key={s}
               onClick={() => updateFilter('size', filters.size === s ? '' : s)}
-              className={`px-3 py-1.5 rounded-full border text-xs font-semibold font-sans transition-all duration-150 ${
+              className="px-3 py-1.5 rounded-full border text-xs font-semibold font-sans transition-all duration-150"
+              style={
                 filters.size === s
-                  ? 'bg-[#A855F7] border-[#A855F7] text-white shadow-sm shadow-purple-200'
-                  : 'border-[#E9D5FF] bg-white text-[#3B0764] hover:border-[#A855F7] hover:text-[#A855F7] hover:bg-[#FAF5FF]'
-              }`}
+                  ? { background: ROSE, borderColor: ROSE, color: '#fff' }
+                  : { background: 'white', borderColor: BORDER, color: BERRY }
+              }
             >
               {s}
             </button>
           ))}
         </div>
 
-        {/* ── Clear all ── */}
         {hasActiveFilters && (
           <>
             <Divider />
@@ -626,62 +632,29 @@ function ShopContent() {
   const [pagination,  setPagination]  = useState({ total: 0, pages: 1, page: 1 })
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  /*
-    FIX (1) — Collection filter not applied to product list
-    ─────────────────────────────────────────────────────────────────────
-    Root cause: useState lazy-init runs during Suspense hydration before
-    the real URL params are available. By the time the component mounts
-    with the real URL, filters.filter is already '' and fetchProducts has
-    already fired with no collection filter.
-
-    Solution: don't use useState lazy init for URL-derived values at all.
-    Instead, keep a single `filters` state that is always authoritative,
-    and on every render compute the EFFECTIVE filters by merging the
-    current state with what searchParams currently says. fetchProducts
-    reads from the merged effective filters so it always reflects the URL.
-
-    Simpler approach used here: read searchParams directly in the fetch
-    function when filters.filter hasn't been manually set yet (i.e. on
-    first load). We track whether the user has manually changed a filter
-    with `userInteracted` ref — before that, always read from searchParams.
-  */
   const userInteracted = useRef(false)
 
   const [filters, setFilters] = useState({
-    sort:     '',
-    size:     '',
-    filter:   '',
-    category: '',
-    search:   '',
-    minPrice: '',
-    maxPrice: '',
-    page:     1,
+    sort: '', size: '', filter: '', category: '', search: '', minPrice: '', maxPrice: '', page: 1,
   })
 
-  /*
-    Read URL params into filters on mount and on every searchParams change
-    (covers hard refresh, direct URL paste, browser back/forward).
-    This useEffect runs AFTER mount so useSearchParams is fully hydrated.
-  */
   const didInitRef = useRef(false)
   useEffect(() => {
-    if (userInteracted.current) return  // user has taken control — don't overwrite
-    const fromURL = {
+    if (userInteracted.current) return
+    setFilters({
       sort:     searchParams.get('sort')     || '',
       size:     searchParams.get('size')     || '',
-      filter:   searchParams.get('filter')  || '',
-      category: searchParams.get('category')|| '',
-      search:   searchParams.get('search')  || '',
-      minPrice: searchParams.get('minPrice')|| '',
-      maxPrice: searchParams.get('maxPrice')|| '',
+      filter:   searchParams.get('filter')   || '',
+      category: searchParams.get('category') || '',
+      search:   searchParams.get('search')   || '',
+      minPrice: searchParams.get('minPrice') || '',
+      maxPrice: searchParams.get('maxPrice') || '',
       page:     Number(searchParams.get('page')) || 1,
-    }
-    setFilters(fromURL)
+    })
     didInitRef.current = true
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // only on mount — searchParams is stable across the initial hydration
+  }, [])
 
-  // Sync URL when user manually changes filters (not on URL-driven init)
   useEffect(() => {
     if (!userInteracted.current) return
     const params = new URLSearchParams()
@@ -705,15 +678,12 @@ function ShopContent() {
       if (filters.sort)     params.set('sort',     filters.sort)
       if (filters.size)     params.set('size',     filters.size)
       if (filters.search)   params.set('search',   filters.search)
-      // Collection filter: translate filters.filter value to the boolean flag the API expects
-      // e.g. filters.filter = 'isNewArrival' → sends ?isNewArrival=true
       if (filters.filter)   params.set(filters.filter, 'true')
       if (filters.category) params.set('category', filters.category)
       if (filters.minPrice) params.set('minPrice', filters.minPrice)
       if (filters.maxPrice) params.set('maxPrice', filters.maxPrice)
       params.set('page',  String(filters.page))
       params.set('limit', '20')
-
       const res  = await fetch(`${BASE}product?${params}`, { cache: 'no-store' })
       const data = await res.json()
       if (data.success) { setProducts(data.data); setPagination(data.pagination) }
@@ -739,153 +709,134 @@ function ShopContent() {
   )
 
   return (
-    <main className="min-h-screen bg-[#FAF5FF]">
+    <main className="min-h-screen" style={{ background: CREAM }}>
 
-      {/* ── Full-width promo banner — replaces the old heading strip ── */}
       <PromoBannerSlider />
 
-      {/* Gap between slider and category strip */}
-      <div className="h-5 bg-[#FAF5FF]" />
+      <div className="h-5" style={{ background: CREAM }} />
 
-      {/* ── Category strip — sticky below header with visible gap ──
-          Offset = header height + 18px gap
-          Mobile:  56px header + 18px = 74px  → top-[74px]
-          Desktop: 80px header + 18px = 98px  → top-[98px]
-          z-20 — always below header (z-[60]).
-      ── */}
-      <div className="border-b border-purple-100 bg-white/90 backdrop-blur-sm sticky top-[74px] md:top-[98px] z-20">
+      {/* Category strip — sticky */}
+      <div
+        className="border-b sticky top-[74px] md:top-[98px] z-20"
+        style={{ borderColor: BORDER, background: 'rgba(255,250,245,0.92)', backdropFilter: 'blur(8px)' }}
+      >
         <div className="w-full px-4 sm:px-6 py-3">
-          <CategoryPills
-            activeCategory={filters.category}
-            onSelect={(cat) => updateFilter('category', cat)}
-          />
+          <CategoryPills activeCategory={filters.category} onSelect={(cat) => updateFilter('category', cat)} />
         </div>
       </div>
 
-      {/* Gap between category strip and main content */}
-      <div className="h-5 bg-[#FAF5FF]" />
+      <div className="h-5" style={{ background: CREAM }} />
 
-      {/* ── Main layout: sidebar + grid — FIX (2) full-width, no max-w ── */}
+      {/* Main layout */}
       <div className="w-full px-4 sm:px-6 pb-12 flex gap-6 lg:gap-8 items-start">
 
-        {/*
-          DESKTOP STICKY SIDEBAR
-          ─────────────────────────────────────────────────────────────
-          Exact top offset so sidebar stops BELOW the category bar with visible gap:
-
-          Header (desktop, NOT scrolled):   80px  (md:h-20)
-          Gap above category bar:           20px  (h-5 div)
-          Category strip height:            46px  (py-3 = 24px + ~22px pills)
-          Gap below category bar:           20px  (h-5 div)
-          Total:                           166px  → use 168px for breathing room
-
-          When scrolled, header becomes a pill with mt-3 (12px). Its actual
-          rendered top is ~12px from viewport, but sticky is relative to scroll
-          position, not rendered position. The 168px top is still safe because
-          the category strip itself is sticky at top-[80px] and occupies ~46px,
-          so sidebar's 168px > 80 + 46 + 20 = 146px — guaranteed gap.
-
-          z-index: 10 — well below header (z-[60]) and category strip (z-20).
-        */}
+        {/* Desktop sidebar */}
         <aside
-          className="hidden lg:block flex-shrink-0 w-56 xl:w-60 bg-white rounded-2xl border border-[#E9D5FF] shadow-md overflow-hidden"
+          className="hidden lg:block flex-shrink-0 w-56 xl:w-60 rounded-2xl overflow-hidden"
           style={{
             position:  'sticky',
             top:       '168px',
             maxHeight: 'calc(100vh - 184px)',
             overflowY: 'auto',
             zIndex:    10,
+            background: 'white',
+            border:    `1px solid ${BORDER}`,
+            boxShadow: `0 4px 16px rgba(224,92,136,0.10)`,
           }}
         >
           <FilterSidebar
-            filters={filters}
-            updateFilter={updateFilter}
-            clearFilters={clearFilters}
-            hasActiveFilters={hasActiveFilters}
+            filters={filters} updateFilter={updateFilter}
+            clearFilters={clearFilters} hasActiveFilters={hasActiveFilters}
             isDrawer={false}
           />
         </aside>
 
-        {/* ══ PRODUCT AREA ══ */}
+        {/* Product area */}
         <div className="flex-1 min-w-0">
 
-          {/* Mobile: filter button + count row */}
+          {/* Mobile: filter button + sort */}
           <div className="flex items-center justify-between mb-4 lg:hidden">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="flex items-center gap-2 bg-white border border-[#E9D5FF] text-[#3B0764] px-4 py-2 rounded-xl text-sm font-medium shadow-sm hover:border-[#A855F7] transition-colors"
+              className="flex items-center gap-2 bg-white border px-4 py-2 rounded-xl text-sm font-medium shadow-sm transition-colors"
+              style={{ borderColor: BORDER, color: BERRY }}
             >
               <Filter size={14} /> Filters
-              {hasActiveFilters && <span className="w-2 h-2 bg-[#A855F7] rounded-full" />}
+              {hasActiveFilters && <span className="w-2 h-2 rounded-full" style={{ background: ROSE }} />}
             </button>
             <div className="flex items-center gap-2">
-              {/* Product count hidden on mobile */}
-              <p className="hidden md:block text-xs text-[#C084FC] font-sans">{pagination.total} products</p>
+              <p className="hidden md:block text-xs font-sans" style={{ color: PINK }}>
+                {pagination.total} products
+              </p>
               <SortDropdown value={filters.sort} onChange={(v) => updateFilter('sort', v)} />
             </div>
           </div>
 
-          {/* Desktop: active tags + sort */}
+          {/* Desktop: active filter tags + sort */}
           <div className="hidden lg:flex items-center justify-between mb-5">
             <div className="flex items-center gap-2 flex-wrap">
               {filters.category && (
-                <span className="inline-flex items-center gap-1.5 bg-[#F3E8FF] text-[#A855F7] text-xs font-semibold px-3 py-1 rounded-full">
+                <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full"
+                      style={{ background: PEACH_LT, color: ROSE }}>
                   <Tag size={10} /> {filters.category}
-                  <button onClick={() => updateFilter('category', '')} className="ml-0.5 hover:text-[#7C3AED]"><X size={10} /></button>
+                  <button onClick={() => updateFilter('category', '')} className="ml-0.5"><X size={10} /></button>
                 </span>
               )}
               {filters.filter && (
-                <span className="inline-flex items-center gap-1.5 bg-[#F3E8FF] text-[#A855F7] text-xs font-semibold px-3 py-1 rounded-full">
+                <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full"
+                      style={{ background: PEACH_LT, color: ROSE }}>
                   <Layers size={10} /> {COLLECTION_OPTIONS.find((o) => o.value === filters.filter)?.label}
-                  <button onClick={() => updateFilter('filter', '')} className="ml-0.5 hover:text-[#7C3AED]"><X size={10} /></button>
+                  <button onClick={() => updateFilter('filter', '')} className="ml-0.5"><X size={10} /></button>
                 </span>
               )}
               {filters.search && (
-                <span className="inline-flex items-center gap-1.5 bg-[#F3E8FF] text-[#A855F7] text-xs font-semibold px-3 py-1 rounded-full">
+                <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full"
+                      style={{ background: PEACH_LT, color: ROSE }}>
                   <Search size={10} /> &ldquo;{filters.search}&rdquo;
-                  <button onClick={() => updateFilter('search', '')} className="ml-0.5 hover:text-[#7C3AED]"><X size={10} /></button>
+                  <button onClick={() => updateFilter('search', '')} className="ml-0.5"><X size={10} /></button>
                 </span>
               )}
-              <p className="text-xs text-[#C084FC] font-sans">{pagination.total} products</p>
+              <p className="text-xs font-sans" style={{ color: PINK }}>{pagination.total} products</p>
             </div>
             <SortDropdown value={filters.sort} onChange={(v) => updateFilter('sort', v)} />
           </div>
 
-          {/* Product grid */}
+          {/* Grid */}
           {loading ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {Array.from({ length: 10 }).map((_, i) => (
-                <div key={i} className="bg-white rounded-2xl border border-[#E9D5FF] overflow-hidden animate-pulse">
-                  <div className="aspect-[3/4] bg-[#F3E8FF]" />
+                <div key={i} className="bg-white rounded-[14px] overflow-hidden animate-pulse"
+                     style={{ border: `1px solid ${BORDER}` }}>
+                  <div className="aspect-[3/4]" style={{ background: PEACH_LT }} />
                   <div className="p-3 space-y-2">
-                    <div className="h-3 bg-[#E9D5FF] rounded w-3/4" />
-                    <div className="h-3 bg-[#E9D5FF] rounded w-full" />
-                    <div className="h-3 bg-[#E9D5FF] rounded w-1/2" />
+                    <div className="h-3 rounded w-3/4" style={{ background: BORDER }} />
+                    <div className="h-3 rounded w-full" style={{ background: BORDER }} />
+                    <div className="h-3 rounded w-1/2" style={{ background: BORDER }} />
                   </div>
                 </div>
               ))}
             </div>
           ) : products.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-[#F3E8FF] flex items-center justify-center mb-5">
-                <Search size={28} className="text-[#C084FC]" strokeWidth={1.5} />
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
+                   style={{ background: PEACH_LT }}>
+                <Search size={28} strokeWidth={1.5} style={{ color: PINK }} />
               </div>
-              <h3
-                className="text-xl font-bold text-[#3B0764] mb-2"
-                style={{ fontFamily: 'var(--font-playfair), serif' }}
-              >
+              <h3 className="text-xl font-bold mb-2"
+                  style={{ fontFamily: 'var(--font-playfair), serif', color: BERRY }}>
                 {filters.search
                   ? `No results for "${filters.search}"`
                   : filters.category
                     ? `No kurtis in "${filters.category}" yet`
                     : 'No kurtis found'}
               </h3>
-              <p className="font-sans text-[#C084FC] text-sm mb-6 max-w-xs">
+              <p className="font-sans text-sm mb-6 max-w-xs" style={{ color: MAUVE }}>
                 Try a different search term, or clear your filters to browse all styles.
               </p>
               <button
                 onClick={clearFilters}
-                className="inline-flex items-center gap-2 bg-[#A855F7] hover:bg-[#9333EA] text-white px-6 py-2.5 rounded-full text-sm font-medium font-sans transition-colors"
+                className="inline-flex items-center gap-2 text-white px-6 py-2.5 rounded-full text-sm font-medium font-sans transition-colors"
+                style={{ background: ROSE }}
               >
                 <X size={14} /> Clear Filters
               </button>
@@ -901,17 +852,19 @@ function ShopContent() {
                   <button
                     onClick={() => setFilters((f) => ({ ...f, page: Math.max(1, f.page - 1) }))}
                     disabled={filters.page === 1}
-                    className="flex items-center gap-1 px-4 py-2 rounded-xl border border-[#E9D5FF] text-sm text-[#3B0764] hover:bg-[#F3E8FF] disabled:opacity-40 transition-colors font-sans"
+                    className="flex items-center gap-1 px-4 py-2 rounded-xl border text-sm font-sans disabled:opacity-40 transition-colors"
+                    style={{ borderColor: BORDER, color: BERRY, background: 'white' }}
                   >
                     <ChevronLeft size={14} /> Prev
                   </button>
-                  <span className="px-4 py-2 text-sm text-[#6B21A8] font-medium font-sans">
+                  <span className="px-4 py-2 text-sm font-medium font-sans" style={{ color: BERRY }}>
                     {filters.page} / {pagination.pages}
                   </span>
                   <button
                     onClick={() => setFilters((f) => ({ ...f, page: Math.min(pagination.pages, f.page + 1) }))}
                     disabled={filters.page === pagination.pages}
-                    className="flex items-center gap-1 px-4 py-2 rounded-xl border border-[#E9D5FF] text-sm text-[#3B0764] hover:bg-[#F3E8FF] disabled:opacity-40 transition-colors font-sans"
+                    className="flex items-center gap-1 px-4 py-2 rounded-xl border text-sm font-sans disabled:opacity-40 transition-colors"
+                    style={{ borderColor: BORDER, color: BERRY, background: 'white' }}
                   >
                     Next <ChevronRight size={14} />
                   </button>
@@ -922,31 +875,25 @@ function ShopContent() {
         </div>
       </div>
 
-      {/* ══ MOBILE FILTER DRAWER ══ */}
-      {/* Backdrop */}
+      {/* Mobile filter drawer */}
       <div
         onClick={() => setSidebarOpen(false)}
         className={`fixed inset-0 z-40 bg-black/40 backdrop-blur-sm transition-opacity duration-300 lg:hidden ${
           sidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
       />
-      {/* Drawer panel — z-50 sits above backdrop (40) but below header (60) on desktop; on mobile header is 60 but drawer slides from bottom so it's fine */}
       <div
         className={`fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl transition-transform duration-300 ease-in-out lg:hidden max-h-[85vh] flex flex-col ${
           sidebarOpen ? 'translate-y-0' : 'translate-y-full'
         }`}
       >
-        {/* Drag handle */}
         <div className="flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 rounded-full bg-gray-200" />
+          <div className="w-10 h-1 rounded-full" style={{ background: BORDER }} />
         </div>
         <FilterSidebar
-          filters={filters}
-          updateFilter={updateFilter}
-          clearFilters={clearFilters}
-          hasActiveFilters={hasActiveFilters}
-          onClose={() => setSidebarOpen(false)}
-          isDrawer={true}
+          filters={filters} updateFilter={updateFilter}
+          clearFilters={clearFilters} hasActiveFilters={hasActiveFilters}
+          onClose={() => setSidebarOpen(false)} isDrawer={true}
         />
       </div>
     </main>
@@ -956,8 +903,9 @@ function ShopContent() {
 export default function ShopPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[#FAF5FF] flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-[#A855F7] border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center" style={{ background: CREAM }}>
+        <div className="w-10 h-10 border-4 border-t-transparent rounded-full animate-spin"
+             style={{ borderColor: ROSE, borderTopColor: 'transparent' }} />
       </div>
     }>
       <ShopContent />
