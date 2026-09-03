@@ -12,8 +12,9 @@ export const metadata = {
 
 export default function HomePage() {
   return (
-    <>
-      {/* 1 — Hero slider + marquee strip */}
+    /* White background on home page — overrides the global cream body bg */
+    <div className="bg-white">
+      {/* 1 — Hero slider */}
       <HeroBanner />
 
       {/* 2 — New Arrivals */}
@@ -25,11 +26,11 @@ export default function HomePage() {
       {/* 4 — Best Sellers */}
       <BestSellers />
 
-      {/* 5 — Offer Section (70%+ discount two-panel promo) */}
+      {/* 5 — Offer / Exclusive Deal section */}
       <OfferSection />
 
       {/* 6 — Newsletter */}
       <NewsletterBanner />
-    </>
+    </div>
   )
 }

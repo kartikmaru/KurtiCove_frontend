@@ -6,12 +6,13 @@ const BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/
 
 function SkeletonCard() {
   return (
-    <div className="rounded-[14px] overflow-hidden animate-pulse border" style={{ borderColor: '#F5C8D4' }}>
-      <div className="aspect-[3/4]" style={{ background: '#FBDBBB' }} />
-      <div className="p-3 space-y-2" style={{ background: '#FEF0E3' }}>
-        <div className="h-4 rounded-full w-4/5" style={{ background: '#F5C8D4' }} />
-        <div className="h-3 rounded-full w-full" style={{ background: '#F5C8D4' }} />
-        <div className="h-5 rounded-full w-2/5" style={{ background: '#F5C8D4' }} />
+    <div className="rounded-2xl overflow-hidden animate-pulse border" style={{ borderColor: '#F0E8EC' }}>
+      <div className="aspect-[3/4] bg-gray-100" />
+      <div className="p-3.5 space-y-2">
+        <div className="h-4 rounded-full w-4/5 bg-gray-100" />
+        <div className="h-3 rounded-full w-1/2 bg-gray-100" />
+        <div className="h-4 rounded-full w-2/5 bg-gray-100" />
+        <div className="h-8 rounded-xl w-full bg-gray-100 mt-1" />
       </div>
     </div>
   )

@@ -1,42 +1,64 @@
 'use client'
 import Link from 'next/link'
-import { useDispatch } from 'react-redux'
-import { ShoppingBag } from 'lucide-react'
-import { addToCartWithSync } from '../../utils/cartHelper'
+import { Heart } from 'lucide-react'
+import { AiFillHeart, AiOutlineHeart } from 'react-icons/ai'
+import { useState, useEffect, useCallback } from 'react'
 
+/* ─── Palette ─── */
+const ROSE   = '#E05C88'
+const BERRY  = '#7B2447'
+const MAUVE  = '#6B4553'
+const BORDER = '#F0E8EC'
+
+const WL_KEY = 'kc_wishlist'
+const getWishlist = () => { try { return JSON.parse(localStorage.getItem(WL_KEY) || '[]') } catch { return [] } }
+
+/*
+  UNIFIED PRODUCT CARD — used on home sections, shop grid, similar products.
+  Reference design:
+    • White card, rounded-2xl, soft rose border, lift on hover
+    • Large image filling top (3:4 ratio, object-contain on white/light bg)
+    • Name — bold berry, sans, 1-line clamp
+    • Category — small muted mauve, 1-line clamp
+    • Price row — selling price bold rose, struck-through original muted
+    • Full-width "View Details" button → navigates to PDP (NO direct add-to-cart)
+    • Wishlist heart — top-right corner of image
+    • NO badges/labels of any kind
+*/
 export default function ProductCard({ product }) {
-  const dispatch = useDispatch()
+  const [inWishlist, setInWishlist] = useState(false)
 
-  const handleAddToCart = async (e) => {
+  useEffect(() => {
+    setInWishlist(getWishlist().includes(product._id))
+  }, [product._id])
+
+  const toggleWishlist = useCallback((e) => {
     e.preventDefault()
     e.stopPropagation()
-    await addToCartWithSync(product, 1, dispatch)
-  }
+    const wl   = getWishlist()
+    const next = wl.includes(product._id)
+      ? wl.filter((id) => id !== product._id)
+      : [...wl, product._id]
+    localStorage.setItem(WL_KEY, JSON.stringify(next))
+    setInWishlist(!inWishlist)
+  }, [product._id, inWishlist])
 
   const displayPrice = product.discountPrice || product.price
   const hasDiscount  = product.discountPrice && product.discountPrice < product.price
-  const discountPct  = hasDiscount
-    ? Math.round(((product.price - product.discountPrice) / product.price) * 100)
-    : 0
 
   return (
-    <Link href={`/product/${product._id}`} className="group block">
-      {/* Card shell — cream-white bg, rose-tinted 1px border, pastel glow on hover */}
+    <Link href={`/product/${product._id}`} className="group block h-full">
       <div
-        className="bg-white rounded-[14px] overflow-hidden transition-all duration-300 hover:-translate-y-1 flex flex-col"
+        className="bg-white rounded-2xl overflow-hidden flex flex-col h-full transition-all duration-300 hover:-translate-y-1"
         style={{
-          border:    '1px solid #F5C8D4',
-          boxShadow: '0 2px 10px rgba(224,92,136,0.08)',
+          border:    `1px solid ${BORDER}`,
+          boxShadow: '0 1px 6px rgba(224,92,136,0.07)',
         }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.boxShadow = '0 8px 28px rgba(224,92,136,0.20)'
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.boxShadow = '0 2px 10px rgba(224,92,136,0.08)'
-        }}
+        onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 8px 28px rgba(224,92,136,0.16)' }}
+        onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 1px 6px rgba(224,92,136,0.07)' }}
       >
         {/* ── IMAGE ── */}
-        <div className="relative aspect-[3/4] bg-[#FEF0E3] overflow-hidden rounded-t-[13px]">
+        <div className="relative aspect-[3/4] bg-[#fafafa] overflow-hidden">
           {product.images?.length > 0 ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -45,129 +67,72 @@ export default function ProductCard({ product }) {
               className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-[1.04]"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-3xl md:text-4xl">👗</div>
+            <div className="w-full h-full flex items-center justify-center text-4xl">👗</div>
           )}
 
-          {/* Badges — top-left stacked */}
-          <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
-            {product.isNewArrival && (
-              <span
-                className="text-[9px] md:text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm leading-none"
-                style={{ background: '#B5EDDB', color: '#7B2447' }}
-              >
-                NEW
-              </span>
-            )}
-            {product.isBestSeller && (
-              <span
-                className="text-[9px] md:text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm leading-none"
-                style={{ background: '#FBDBBB', color: '#7B2447' }}
-              >
-                BEST SELLER
-              </span>
-            )}
-            {hasDiscount && (
-              <span
-                className="text-[9px] md:text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm leading-none"
-                style={{ background: '#E05C88', color: '#fff' }}
-              >
-                {discountPct}% OFF
-              </span>
-            )}
-          </div>
-
-          {/* Out of stock overlay */}
+          {/* Out of stock overlay — no badges */}
           {product.stock === 0 && (
-            <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
-              <span
-                className="bg-white text-[10px] md:text-xs font-semibold px-3 py-1 rounded-full"
-                style={{ color: '#7B2447' }}
-              >
-                Out of Stock
-              </span>
+            <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
+              <span className="bg-white text-xs font-semibold px-3 py-1 rounded-full shadow"
+                    style={{ color: BERRY }}>Out of Stock</span>
             </div>
           )}
+
+          {/* Wishlist heart */}
+          <button
+            onClick={toggleWishlist}
+            aria-label={inWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
+            className="absolute top-2.5 right-2.5 z-10 w-8 h-8 md:w-9 md:h-9 rounded-full bg-white/90 shadow flex items-center justify-center transition-all duration-200 hover:scale-110"
+          >
+            {inWishlist
+              ? <AiFillHeart size={15} className="text-red-500" />
+              : <AiOutlineHeart size={15} style={{ color: MAUVE }} />}
+          </button>
         </div>
 
         {/* ── DETAILS ── */}
-        <div className="p-2.5 md:p-3 flex flex-col gap-1 flex-1">
+        <div className="p-2.5 md:p-3.5 flex flex-col gap-1 flex-1">
 
-          {/* Title — deep berry, serif, 1-line clamp */}
+          {/* Product name */}
           <h3
-            className="font-sans text-[12px] md:text-sm font-semibold line-clamp-1 leading-snug"
-            style={{ color: '#7B2447' }}
+            className="font-sans font-bold text-[12px] md:text-sm leading-snug line-clamp-1"
+            style={{ color: BERRY }}
           >
             {product.name}
           </h3>
 
-          {/* Description — mauve, 2-line clamp, slightly smaller on mobile */}
-          {product.description && (
-            <p
-              className="text-[10px] md:text-[11px] font-sans leading-snug"
-              style={{
-                color: '#6B4553',
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-              }}
-            >
-              {product.description}
+          {/* Category / type line — muted mauve */}
+          {product.category && (
+            <p className="font-sans text-[10px] md:text-[11px] line-clamp-1 leading-none"
+               style={{ color: MAUVE }}>
+              {product.category}
             </p>
           )}
 
-          {/* Spacer pushes price + button to bottom */}
-          <div className="flex-1" />
+          {/* Spacer */}
+          <div className="flex-1 min-h-[4px]" />
 
           {/* Price row */}
-          <div className="flex items-center gap-1.5 mt-1">
-            <span
-              className="font-semibold text-[13px] md:text-sm font-sans leading-none"
-              style={{ color: '#E05C88' }}
-            >
+          <div className="flex items-baseline gap-1.5 flex-wrap">
+            <span className="font-sans font-bold text-sm md:text-[15px] leading-none" style={{ color: ROSE }}>
               ₹{displayPrice.toLocaleString()}
             </span>
             {hasDiscount && (
-              <span
-                className="text-[10px] md:text-xs line-through font-sans font-normal leading-none"
-                style={{ color: '#6B4553' }}
-              >
+              <span className="font-sans text-[10px] md:text-xs line-through leading-none" style={{ color: '#9CA3AF' }}>
                 ₹{product.price.toLocaleString()}
               </span>
             )}
           </div>
 
-          {/* Quick-add button — full-width outlined pill, slides up on hover */}
-          {product.stock > 0 && (
-            <button
-              onClick={handleAddToCart}
-              className="
-                mt-1.5 w-full flex items-center justify-center gap-1.5
-                border rounded-full py-1.5 md:py-2
-                text-[10px] md:text-[11px] font-semibold font-sans
-                transition-all duration-200
-                opacity-0 translate-y-1
-                group-hover:opacity-100 group-hover:translate-y-0
-              "
-              style={{
-                borderColor: '#E05C88',
-                color: '#E05C88',
-                background: 'transparent',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#E05C88'
-                e.currentTarget.style.color = '#fff'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'transparent'
-                e.currentTarget.style.color = '#E05C88'
-              }}
-              title="Add to Cart"
-            >
-              <ShoppingBag size={12} />
-              Add to Cart
-            </button>
-          )}
+          {/* Full-width CTA — navigates to PDP, does NOT add to cart directly */}
+          <Link
+            href={`/product/${product._id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="mt-2 w-full flex items-center justify-center text-white font-sans font-medium text-[11px] md:text-xs py-2 md:py-2.5 rounded-xl transition-all duration-200 hover:opacity-90 active:scale-[0.98]"
+            style={{ background: ROSE }}
+          >
+            View Details
+          </Link>
         </div>
       </div>
     </Link>

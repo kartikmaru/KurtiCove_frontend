@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useDispatch } from 'react-redux'
 import { AiFillHeart, AiOutlineHeart } from 'react-icons/ai'
@@ -28,6 +28,44 @@ const WL_KEY = 'kc_wishlist'
 const getWishlist = () => {
   try { return JSON.parse(localStorage.getItem(WL_KEY) || '[]') }
   catch { return [] }
+}
+
+/* ── Safe HTML description renderer ──
+   Uses DOMPurify on the client. Strips all scripts/event-attrs.
+   Styled with prose tokens matching the pastel theme.
+── */
+function HtmlDescription({ html }) {
+  const ref = useRef(null)
+
+  useEffect(() => {
+    if (!ref.current) return
+    // DOMPurify is browser-only — safe inside useEffect
+    import('dompurify').then(({ default: DOMPurify }) => {
+      const clean = DOMPurify.sanitize(html, {
+        ALLOWED_TAGS: ['p','br','b','strong','i','em','u','h2','h3','ul','ol','li','span','a'],
+        ALLOWED_ATTR: ['href','target','rel'],
+      })
+      if (ref.current) ref.current.innerHTML = clean
+    })
+  }, [html])
+
+  return (
+    <>
+      <style>{`
+        .product-desc h2 { font-family: var(--font-playfair), serif; font-size: 1.1rem; font-weight: 700; color: #7B2447; margin: 0.75rem 0 0.35rem; }
+        .product-desc h3 { font-family: var(--font-playfair), serif; font-size: 0.95rem; font-weight: 600; color: #7B2447; margin: 0.6rem 0 0.3rem; }
+        .product-desc p  { color: #6B4553; font-size: 0.875rem; line-height: 1.65; margin-bottom: 0.5rem; }
+        .product-desc ul,.product-desc ol { padding-left: 1.25rem; margin-bottom: 0.5rem; }
+        .product-desc li { color: #6B4553; font-size: 0.875rem; line-height: 1.6; margin-bottom: 0.15rem; }
+        .product-desc ul li::marker { color: #E05C88; }
+        .product-desc ol li::marker { color: #E05C88; font-weight: 600; }
+        .product-desc strong,.product-desc b { color: #7B2447; font-weight: 700; }
+        .product-desc em,.product-desc i { font-style: italic; }
+        .product-desc a { color: #E05C88; text-decoration: underline; text-underline-offset: 2px; }
+      `}</style>
+      <div ref={ref} className="product-desc" />
+    </>
+  )
 }
 
 /* ── Zoom image (scale on hover, stays in rounded container) ── */
@@ -342,11 +380,17 @@ export default function ProductDetailPage() {
 
             <hr style={{ borderColor: BORDER }} />
 
-            {/* Description */}
+            {/* Description — renders HTML if present, falls back to plain text */}
             {product.description && (
-              <p id="description" className="text-sm leading-relaxed font-sans" style={{ color: MAUVE }}>
-                {product.description}
-              </p>
+              <div id="description">
+                {/<[a-z][\s\S]*>/i.test(product.description) ? (
+                  <HtmlDescription html={product.description} />
+                ) : (
+                  <p className="text-sm leading-relaxed font-sans" style={{ color: MAUVE }}>
+                    {product.description}
+                  </p>
+                )}
+              </div>
             )}
 
             {/* Colors */}

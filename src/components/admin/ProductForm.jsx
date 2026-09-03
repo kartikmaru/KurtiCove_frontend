@@ -1,11 +1,146 @@
 'use client'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import API from '../../utils/Helper'
 import toast from 'react-hot-toast'
 import { FiX, FiUpload, FiChevronDown } from 'react-icons/fi'
 
 const SIZE_OPTIONS = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/'
+
+/* ─────────────────────────────────────────────────────────────────────
+   RICH TEXT EDITOR
+   Toolbar: Bold · Italic · Underline · H2 · H3 · Bullet list · Numbered list · BR
+   Outputs clean HTML string stored in form.description.
+   Preview tab shows sanitized rendered result.
+───────────────────────────────────────────────────────────────────── */
+function RichTextEditor({ value, onChange }) {
+  const editorRef  = useRef(null)
+  const [preview,  setPreview]  = useState(false)
+  const [html,     setHtml]     = useState(value || '')
+  const initiated  = useRef(false)
+
+  /* Sync incoming value → editor on first mount only */
+  useEffect(() => {
+    if (initiated.current || !editorRef.current) return
+    editorRef.current.innerHTML = value || ''
+    initiated.current = true
+  }, [value])
+
+  const exec = useCallback((cmd, val = null) => {
+    editorRef.current?.focus()
+    document.execCommand(cmd, false, val)
+    sync()
+  }, [])
+
+  const sync = useCallback(() => {
+    const content = editorRef.current?.innerHTML || ''
+    setHtml(content)
+    onChange(content)
+  }, [onChange])
+
+  const insertBR = useCallback(() => {
+    editorRef.current?.focus()
+    document.execCommand('insertHTML', false, '<br/>')
+    sync()
+  }, [sync])
+
+  const toolbarBtnCls = 'px-2.5 py-1 rounded-lg border text-xs font-semibold font-sans transition-all hover:bg-[#F3E8FF] border-[#E9D5FF] text-[#3B0764] active:scale-95 select-none'
+
+  return (
+    <div className="rounded-xl border border-[#E9D5FF] overflow-hidden bg-white">
+      {/* Toolbar */}
+      <div className="flex items-center gap-1 flex-wrap px-3 py-2 border-b border-[#E9D5FF] bg-[#FAF5FF]">
+        <button type="button" title="Bold"        className={toolbarBtnCls} onMouseDown={(e) => { e.preventDefault(); exec('bold')          }}>B</button>
+        <button type="button" title="Italic"      className={`${toolbarBtnCls} italic`}      onMouseDown={(e) => { e.preventDefault(); exec('italic')        }}>I</button>
+        <button type="button" title="Underline"   className={`${toolbarBtnCls} underline`}   onMouseDown={(e) => { e.preventDefault(); exec('underline')     }}>U</button>
+        <span className="w-px h-5 bg-[#E9D5FF] mx-1" />
+        <button type="button" title="Heading 2"   className={toolbarBtnCls} onMouseDown={(e) => { e.preventDefault(); exec('formatBlock', 'H2') }}>H2</button>
+        <button type="button" title="Heading 3"   className={toolbarBtnCls} onMouseDown={(e) => { e.preventDefault(); exec('formatBlock', 'H3') }}>H3</button>
+        <button type="button" title="Paragraph"   className={toolbarBtnCls} onMouseDown={(e) => { e.preventDefault(); exec('formatBlock', 'P')  }}>P</button>
+        <span className="w-px h-5 bg-[#E9D5FF] mx-1" />
+        <button type="button" title="Bullet list"   className={toolbarBtnCls} onMouseDown={(e) => { e.preventDefault(); exec('insertUnorderedList') }}>• List</button>
+        <button type="button" title="Numbered list" className={toolbarBtnCls} onMouseDown={(e) => { e.preventDefault(); exec('insertOrderedList')   }}>1. List</button>
+        <button type="button" title="Line break"    className={toolbarBtnCls} onMouseDown={(e) => { e.preventDefault(); insertBR()                  }}>↵ BR</button>
+        <span className="flex-1" />
+        {/* Preview toggle */}
+        <button
+          type="button"
+          onClick={() => setPreview((v) => !v)}
+          className={`px-3 py-1 rounded-lg border text-xs font-semibold font-sans transition-all ${
+            preview
+              ? 'bg-[#A855F7] border-[#A855F7] text-white'
+              : 'border-[#E9D5FF] text-[#A855F7] hover:bg-[#F3E8FF]'
+          }`}
+        >
+          {preview ? 'Edit' : 'Preview'}
+        </button>
+      </div>
+
+      {preview ? (
+        /* ── Preview panel ── */
+        <div className="min-h-[120px] px-4 py-3">
+          {html ? (
+            <>
+              <style>{`
+                .rte-preview h2{font-size:1.05rem;font-weight:700;color:#3B0764;margin:0.6rem 0 0.3rem}
+                .rte-preview h3{font-size:0.9rem;font-weight:600;color:#3B0764;margin:0.5rem 0 0.25rem}
+                .rte-preview p{font-size:0.875rem;line-height:1.6;color:#4B2F3A;margin-bottom:0.4rem}
+                .rte-preview ul,.rte-preview ol{padding-left:1.2rem;margin-bottom:0.4rem}
+                .rte-preview li{font-size:0.875rem;line-height:1.55;color:#4B2F3A;margin-bottom:0.1rem}
+                .rte-preview ul li::marker{color:#A855F7}
+                .rte-preview ol li::marker{color:#A855F7;font-weight:600}
+                .rte-preview strong,.rte-preview b{color:#3B0764;font-weight:700}
+              `}</style>
+              {/* dangerouslySetInnerHTML is admin-only, content written by the admin themselves */}
+              <div className="rte-preview text-sm" dangerouslySetInnerHTML={{ __html: html }} />
+            </>
+          ) : (
+            <p className="text-sm text-gray-400 font-sans">Nothing to preview yet.</p>
+          )}
+        </div>
+      ) : (
+        /* ── Editable area ── */
+        <div
+          ref={editorRef}
+          contentEditable
+          suppressContentEditableWarning
+          onInput={sync}
+          className="min-h-[120px] px-4 py-3 text-sm text-[#3B0764] font-sans outline-none"
+          style={{ lineHeight: 1.65 }}
+          data-placeholder="Describe the kurti — supports bold, headings, lists…"
+        />
+      )}
+
+      {/* Raw HTML toggle — small helper */}
+      <details className="border-t border-[#E9D5FF]">
+        <summary className="px-4 py-1.5 text-[11px] text-gray-400 cursor-pointer hover:text-gray-600 select-none">
+          Raw HTML
+        </summary>
+        <textarea
+          rows={4}
+          value={html}
+          onChange={(e) => {
+            const v = e.target.value
+            setHtml(v)
+            onChange(v)
+            if (editorRef.current && !preview) editorRef.current.innerHTML = v
+          }}
+          className="w-full px-4 py-2 text-xs font-mono text-gray-600 bg-gray-50 outline-none resize-y border-t border-[#E9D5FF]"
+          spellCheck={false}
+        />
+      </details>
+
+      {/* Empty placeholder CSS */}
+      <style>{`
+        [contenteditable][data-placeholder]:empty:before {
+          content: attr(data-placeholder);
+          color: #C084FC;
+          pointer-events: none;
+        }
+      `}</style>
+    </div>
+  )
+}
 
 /* ── Category combobox ───────────────────────────────────────── */
 function CategoryCombobox({ value, onChange }) {
@@ -242,17 +377,14 @@ export default function ProductForm({ product, onSuccess, onCancel }) {
         />
       </div>
 
-      {/* Description */}
+      {/* Description — rich-text editor */}
       <div>
-        <label className="block text-sm font-semibold text-[#3B0764] mb-1">Description *</label>
-        <textarea
-          name="description"
+        <label className="block text-sm font-semibold text-[#3B0764] mb-1">Description *
+          <span className="font-normal text-gray-400 ml-1">(supports HTML formatting)</span>
+        </label>
+        <RichTextEditor
           value={form.description}
-          onChange={handleChange}
-          rows={3}
-          placeholder="Describe the kurti…"
-          required
-          className="w-full border border-[#E9D5FF] rounded-xl px-4 py-2.5 text-sm text-[#3B0764] bg-white focus:outline-none focus:ring-2 focus:ring-[#A855F7]/30 focus:border-[#A855F7] resize-none"
+          onChange={(val) => setForm((prev) => ({ ...prev, description: val }))}
         />
       </div>
 

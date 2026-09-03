@@ -12,7 +12,9 @@
   },
   "dependencies": {
     "@reduxjs/toolkit": "latest",
+    "@types/dompurify": "^3.0.5",
     "axios": "latest",
+    "dompurify": "^3.4.14",
     "lucide-react": "1.28.0",
     "next": "latest",
     "react": "latest",
