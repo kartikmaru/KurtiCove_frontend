@@ -4,7 +4,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   Search, X, Filter, Tag, ChevronDown, ChevronRight,
-  SlidersHorizontal, ChevronLeft, Layers, Ruler, Check, IndianRupee,
+  SlidersHorizontal, ChevronLeft, Ruler, Check, IndianRupee,
 } from 'lucide-react'
 import ProductCard from '../../components/user/ProductCard'
 
@@ -25,13 +25,6 @@ const SORT_OPTIONS = [
   { label: 'Newest First',       value: ''     },
   { label: 'Price: Low to High', value: 'asc'  },
   { label: 'Price: High to Low', value: 'desc' },
-]
-
-const COLLECTION_OPTIONS = [
-  { label: 'All',          value: ''             },
-  { label: 'New Arrivals', value: 'isNewArrival' },
-  { label: 'Featured',     value: 'isFeatured'   },
-  { label: 'Best Sellers', value: 'isBestSeller' },
 ]
 
 /* ═══ PROMO BANNER SLIDER ═══ */
@@ -182,7 +175,14 @@ function FilterSidebar({ filters, updateFilter, clearFilters, hasActiveFilters, 
   const [searchInput,   setSearchInput]   = useState(filters.search)
   const [minPriceInput, setMinPriceInput] = useState(filters.minPrice)
   const [maxPriceInput, setMaxPriceInput] = useState(filters.maxPrice)
+  const [categories,    setCategories]    = useState([])
   const searchDebounce = useRef(null)
+
+  /* Fetch categories from backend */
+  useEffect(() => {
+    fetch(`${BASE}product/categories`).then((r) => r.json())
+      .then((d) => { if (d.success) setCategories(d.data) }).catch(() => {})
+  }, [])
 
   useEffect(() => {
     clearTimeout(searchDebounce.current)
@@ -199,15 +199,14 @@ function FilterSidebar({ filters, updateFilter, clearFilters, hasActiveFilters, 
 
   const applyPrice = () => { updateFilter('minPrice', minPriceInput); updateFilter('maxPrice', maxPriceInput) }
 
+  /* Tighter section head — less vertical space */
   const SectionHead = ({ icon: Icon, text }) => (
-    <div className="flex items-center gap-2 mb-3">
-      <div className="flex items-center justify-center w-6 h-6 rounded-lg flex-shrink-0" style={{ background: PEACH_LT }}>
-        <Icon size={12} strokeWidth={2.5} style={{ color: ROSE }} />
-      </div>
-      <p className="font-sans text-[11px] font-bold uppercase tracking-[0.16em] flex-1" style={{ color: BERRY }}>{text}</p>
+    <div className="flex items-center gap-1.5 mb-2">
+      <Icon size={11} strokeWidth={2.5} style={{ color: ROSE }} />
+      <p className="font-sans text-[10px] font-bold uppercase tracking-[0.18em] flex-1" style={{ color: BERRY }}>{text}</p>
     </div>
   )
-  const Divider = () => <div className="border-t my-4" style={{ borderColor: BORDER }} />
+  const Divider = () => <div className="border-t my-3" style={{ borderColor: BORDER }} />
 
   return (
     <div className={isDrawer ? 'h-full flex flex-col' : ''}>
@@ -218,62 +217,86 @@ function FilterSidebar({ filters, updateFilter, clearFilters, hasActiveFilters, 
           <button onClick={onClose} className="p-1.5 rounded-full transition-colors" style={{ color: PINK }} aria-label="Close filters"><X size={18} /></button>
         </div>
       )}
-      <div className={`p-4 ${isDrawer ? 'flex-1 overflow-y-auto' : ''}`}>
+      <div className={`px-3.5 py-3.5 ${isDrawer ? 'flex-1 overflow-y-auto' : ''}`}
+           style={isDrawer ? {} : { scrollbarWidth: 'none' }}>
+
         {/* Search */}
         <SectionHead icon={Search} text="Search" />
-        <div className="flex items-center gap-2 border rounded-xl px-3 py-2.5 transition-all" style={{ borderColor: BORDER, background: WHITE }}>
-          <Search size={12} className="flex-shrink-0" style={{ color: PINK }} />
+        <div className="flex items-center gap-2 border rounded-xl px-3 py-2 transition-all" style={{ borderColor: BORDER, background: WHITE }}>
+          <Search size={11} className="flex-shrink-0" style={{ color: PINK }} />
           <input type="text" value={searchInput} onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Search kurtis…" className="flex-1 text-xs bg-transparent outline-none font-sans" style={{ color: BERRY }} />
-          {searchInput && <button onClick={() => setSearchInput('')} style={{ color: PINK }}><X size={11} /></button>}
+          {searchInput && <button onClick={() => setSearchInput('')} style={{ color: PINK }}><X size={10} /></button>}
         </div>
+
         <Divider />
-        {/* Price */}
+
+        {/* Category — dynamic from backend, replaces Collection */}
+        <SectionHead icon={Tag} text="Category" />
+        <div className="space-y-0.5">
+          {/* "All" option */}
+          <button
+            onClick={() => updateFilter('category', '')}
+            className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-sans font-medium transition-all flex items-center gap-2"
+            style={{ background: !filters.category ? ROSE : 'transparent', color: !filters.category ? '#fff' : BERRY }}>
+            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 border"
+              style={!filters.category ? { background: '#fff', borderColor: '#fff' } : { borderColor: PINK }} />
+            All Categories
+          </button>
+          {categories.map(({ name }) => {
+            const active = filters.category === name
+            return (
+              <button key={name}
+                onClick={() => updateFilter('category', active ? '' : name)}
+                className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-sans font-medium transition-all flex items-center justify-between gap-2"
+                style={{ background: active ? ROSE : 'transparent', color: active ? '#fff' : BERRY }}>
+                <span className="flex items-center gap-2 min-w-0">
+                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 border"
+                    style={active ? { background: '#fff', borderColor: '#fff' } : { borderColor: PINK }} />
+                  <span className="truncate">{name}</span>
+                </span>
+              </button>
+            )
+          })}
+          {categories.length === 0 && (
+            <p className="text-[10px] font-sans px-2.5 py-1" style={{ color: PINK }}>Loading…</p>
+          )}
+        </div>
+
+        <Divider />
+
+        {/* Price Range */}
         <SectionHead icon={IndianRupee} text="Price Range" />
-        <div className="flex items-stretch gap-2 mb-3">
+        <div className="flex items-stretch gap-2 mb-2">
           {[{ label: 'Min ₹', val: minPriceInput, set: setMinPriceInput, ph: '0' }, { label: 'Max ₹', val: maxPriceInput, set: setMaxPriceInput, ph: 'Any' }].map((f, idx) => (
-            <div key={idx} className="flex-1 border rounded-xl px-3 py-2" style={{ borderColor: BORDER, background: WHITE }}>
+            <div key={idx} className="flex-1 border rounded-lg px-2.5 py-1.5" style={{ borderColor: BORDER, background: WHITE }}>
               <p className="text-[9px] font-sans font-semibold uppercase tracking-wide mb-0.5" style={{ color: PINK }}>{f.label}</p>
               <input type="number" min={0} value={f.val} placeholder={f.ph} onChange={(e) => f.set(e.target.value)} className="w-full text-xs bg-transparent outline-none font-sans" style={{ color: BERRY }} />
             </div>
           ))}
         </div>
-        <button onClick={applyPrice} className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold font-sans transition-all active:scale-95 text-white" style={{ background: ROSE }}>
-          <Check size={12} strokeWidth={2.5} /> Apply Price Filter
+        <button onClick={applyPrice} className="w-full flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-semibold font-sans transition-all active:scale-95 text-white" style={{ background: ROSE }}>
+          <Check size={11} strokeWidth={2.5} /> Apply
         </button>
+
         <Divider />
-        {/* Collection */}
-        <SectionHead icon={Layers} text="Collection" />
-        <div className="space-y-0.5 mb-1">
-          {COLLECTION_OPTIONS.map((opt) => {
-            const active = filters.filter === opt.value
-            return (
-              <button key={opt.value} onClick={() => updateFilter('filter', opt.value)}
-                className="w-full text-left px-3 py-2 rounded-lg text-xs font-sans font-medium transition-all duration-150 flex items-center gap-2"
-                style={{ background: active ? ROSE : 'transparent', color: active ? '#fff' : BERRY }}>
-                <span className="w-2 h-2 rounded-full flex-shrink-0 border transition-all"
-                  style={active ? { background: '#fff', borderColor: '#fff' } : { borderColor: PINK }} />
-                {opt.label}
-              </button>
-            )
-          })}
-        </div>
-        <Divider />
+
         {/* Size */}
         <SectionHead icon={Ruler} text="Size" />
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1">
           {SIZES.map((s) => (
             <button key={s} onClick={() => updateFilter('size', filters.size === s ? '' : s)}
-              className="px-3 py-1.5 rounded-full border text-xs font-semibold font-sans transition-all duration-150"
+              className="px-2.5 py-1 rounded-full border text-xs font-semibold font-sans transition-all"
               style={filters.size === s ? { background: ROSE, borderColor: ROSE, color: '#fff' } : { background: WHITE, borderColor: BORDER, color: BERRY }}>
               {s}
             </button>
           ))}
         </div>
+
         {hasActiveFilters && (
           <>
             <Divider />
-            <button onClick={clearFilters} className="w-full border border-red-200 text-red-400 hover:bg-red-50 hover:text-red-600 py-2.5 rounded-xl text-xs font-semibold font-sans transition-colors">
+            <button onClick={clearFilters} className="w-full border border-red-200 text-red-400 hover:bg-red-50 hover:text-red-600 py-2 rounded-lg text-xs font-semibold font-sans transition-colors">
               Clear All Filters
             </button>
           </>
@@ -399,9 +422,21 @@ function ShopContent() {
       {/* Main layout */}
       <div className="w-full px-4 sm:px-6 pb-12 flex gap-6 lg:gap-8 items-start">
 
-        {/* Desktop sidebar */}
-        <aside className="hidden lg:block flex-shrink-0 w-56 xl:w-60 rounded-2xl overflow-hidden"
-          style={{ position: 'sticky', top: '168px', maxHeight: 'calc(100vh - 184px)', overflowY: 'auto', zIndex: 10, background: WHITE, border: `1px solid ${BORDER}`, boxShadow: `0 4px 16px rgba(224,92,136,0.10)` }}>
+        {/* Desktop sidebar — wider, no scrollbar */}
+        <aside className="hidden lg:block flex-shrink-0 rounded-2xl overflow-hidden"
+          style={{
+            width: '268px',
+            position: 'sticky', top: '168px',
+            maxHeight: 'calc(100vh - 184px)',
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            scrollbarWidth: 'none',
+            zIndex: 10,
+            background: WHITE,
+            border: `1px solid ${BORDER}`,
+            boxShadow: `0 4px 16px rgba(224,92,136,0.10)`,
+          }}>
+          <style>{`aside::-webkit-scrollbar{display:none}`}</style>
           <FilterSidebar filters={filters} updateFilter={updateFilter} clearFilters={clearFilters} hasActiveFilters={hasActiveFilters} isDrawer={false} />
         </aside>
 
@@ -435,7 +470,7 @@ function ShopContent() {
               {filters.filter && (
                 <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full"
                   style={{ background: PEACH_LT, color: ROSE }}>
-                  <Layers size={10} /> {COLLECTION_OPTIONS.find((o) => o.value === filters.filter)?.label}
+                  {filters.filter.replace('is','').replace(/([A-Z])/g,' $1').trim()}
                   <button onClick={() => updateFilter('filter', '')} className="ml-0.5"><X size={10} /></button>
                 </span>
               )}
