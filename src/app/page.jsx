@@ -2,6 +2,7 @@ import HeroBanner from '../components/user/HeroBanner'
 import NewArrivals from '../components/user/NewArrivals'
 import FestivalSale from '../components/user/FestivalSale'
 import BestSellers from '../components/user/BestSellers'
+import Combos from '../components/user/Combos'
 import OfferSection from '../components/user/FeaturedProducts'
 import NewsletterBanner from '../components/user/NewsletterBanner'
 
@@ -12,24 +13,20 @@ export const metadata = {
 
 export default function HomePage() {
   return (
-    /* White background on home page — overrides the global cream body bg */
     <div className="bg-white">
       {/* 1 — Hero slider */}
       <HeroBanner />
-
       {/* 2 — New Arrivals */}
       <NewArrivals />
-
-      {/* 3 — Festival Sale (renders only when a sale is active) */}
+      {/* 3 — Festival Sale */}
       <FestivalSale />
-
       {/* 4 — Best Sellers */}
       <BestSellers />
-
-      {/* 5 — Offer / Exclusive Deal section */}
+      {/* 5 — Combos */}
+      <Combos />
+      {/* 6 — Offer / Exclusive Deal section */}
       <OfferSection />
-
-      {/* 6 — Newsletter */}
+      {/* 7 — Newsletter */}
       <NewsletterBanner />
     </div>
   )

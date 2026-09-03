@@ -694,8 +694,8 @@ export default function ProductDetailPage() {
               ))}
             </div>
 
-            {/* Pincode */}
-            <div className="rounded-2xl p-4" style={{ background: PEACH_LT, border: `1px solid ${BORDER}` }}>
+            {/* Pincode — hidden on mobile, desktop only */}
+            <div className="hidden md:block rounded-2xl p-4" style={{ background: PEACH_LT, border: `1px solid ${BORDER}` }}>
               <p className="text-xs font-bold uppercase tracking-widest font-sans mb-2" style={{ color: MAUVE }}>Check Delivery</p>
               <PincodeChecker />
             </div>

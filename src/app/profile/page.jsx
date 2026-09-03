@@ -9,12 +9,12 @@ const ROSE     = '#E05C88'
 const BERRY    = '#7B2447'
 const MAUVE    = '#6B4553'
 const PINK     = '#F8A5B5'
-const PEACH    = '#FBDBBB'
-const CREAM    = '#FCFAE0'
 const BORDER   = '#F5C8D4'
 const PEACH_LT = '#FEF0E3'
 const CARD     = '#FFFAF5'
-const MINT     = '#B5EDDB'
+
+/* Account pages use Cormorant Garamond for an editorial serif feel */
+const ACCT_SERIF = '"Cormorant Garamond", "Playfair Display", Georgia, serif'
 
 const emptyAddr = { fullName: '', mobile: '', pincode: '', addressLine: '', city: '', state: '' }
 
@@ -25,12 +25,7 @@ function InputField({ label, value, onChange, placeholder, disabled, type = 'tex
       <input
         type={type} value={value} onChange={onChange} placeholder={placeholder} disabled={disabled}
         className="w-full border rounded-xl px-4 py-2.5 text-sm font-sans outline-none transition-all"
-        style={{
-          borderColor: BORDER,
-          color:       disabled ? PINK : BERRY,
-          background:  disabled ? PEACH_LT : CARD,
-          cursor:      disabled ? 'not-allowed' : 'text',
-        }}
+        style={{ borderColor: BORDER, color: disabled ? PINK : BERRY, background: disabled ? PEACH_LT : CARD, cursor: disabled ? 'not-allowed' : 'text' }}
         onFocus={(e)  => { if (!disabled) { e.target.style.borderColor = ROSE; e.target.style.boxShadow = `0 0 0 3px ${ROSE}22` } }}
         onBlur={(e)   => { e.target.style.borderColor = BORDER; e.target.style.boxShadow = 'none' }}
       />
@@ -70,13 +65,8 @@ export default function ProfilePage() {
     setSavingProfile(true)
     try {
       const res = await API.put('/user/update-profile', profileForm)
-      if (res.data.success) {
-        setUser(res.data.data)
-        localStorage.setItem('kc_user', JSON.stringify(res.data.data))
-        toast.success('Profile updated.')
-      }
-    } catch { /* silent */ }
-    finally { setSavingProfile(false) }
+      if (res.data.success) { setUser(res.data.data); localStorage.setItem('kc_user', JSON.stringify(res.data.data)); toast.success('Profile updated.') }
+    } catch { /* silent */ } finally { setSavingProfile(false) }
   }
 
   const handlePasswordChange = async (e) => {
@@ -85,40 +75,28 @@ export default function ProfilePage() {
     if (pwdForm.newPassword.length < 6) { toast.error('Password must be at least 6 characters.'); return }
     setSavingPwd(true)
     try {
-      await API.patch('/user/change-password', {
-        currentPassword: pwdForm.currentPassword,
-        newPassword:     pwdForm.newPassword,
-      })
+      await API.patch('/user/change-password', { currentPassword: pwdForm.currentPassword, newPassword: pwdForm.newPassword })
       toast.success('Password changed.')
       setPwdForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
-    } catch { /* silent */ }
-    finally { setSavingPwd(false) }
+    } catch { /* silent */ } finally { setSavingPwd(false) }
   }
 
   const handleAddAddress = async (e) => {
     e.preventDefault()
     const { fullName, mobile, pincode, addressLine, city, state } = newAddr
-    if (!fullName || !mobile || !pincode || !addressLine || !city || !state) {
-      toast.error('All address fields are required.'); return
-    }
+    if (!fullName || !mobile || !pincode || !addressLine || !city || !state) { toast.error('All address fields are required.'); return }
     setSavingAddr(true)
     try {
       const res = await API.post('/user/addaddresses', newAddr)
-      if (res.data.success) {
-        setUser((prev) => ({ ...prev, addresses: res.data.data }))
-        setNewAddr(emptyAddr)
-        setShowAddrForm(false)
-        toast.success('Address added.')
-      }
-    } catch { /* silent */ }
-    finally { setSavingAddr(false) }
+      if (res.data.success) { setUser((p) => ({ ...p, addresses: res.data.data })); setNewAddr(emptyAddr); setShowAddrForm(false); toast.success('Address added.') }
+    } catch { /* silent */ } finally { setSavingAddr(false) }
   }
 
   const handleDeleteAddress = async (index) => {
     if (!confirm('Delete this address?')) return
     try {
       const res = await API.put('/user/deleteaddress', { index })
-      if (res.data.success) setUser((prev) => ({ ...prev, addresses: res.data.data }))
+      if (res.data.success) setUser((p) => ({ ...p, addresses: res.data.data }))
     } catch { /* silent */ }
   }
 
@@ -129,45 +107,39 @@ export default function ProfilePage() {
   ]
 
   const SaveBtn = ({ saving, label, savingLabel }) => (
-    <button
-      type="submit" disabled={saving}
+    <button type="submit" disabled={saving}
       className="text-white px-6 py-2.5 rounded-xl font-sans font-semibold text-sm transition-all disabled:opacity-60 hover:shadow-md"
-      style={{ background: ROSE }}
-    >
+      style={{ background: ROSE }}>
       {saving ? savingLabel : label}
     </button>
   )
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: CREAM }}>
-        <div className="w-12 h-12 border-4 border-t-transparent rounded-full animate-spin"
-             style={{ borderColor: ROSE, borderTopColor: 'transparent' }} />
-      </div>
-    )
-  }
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="w-12 h-12 border-4 border-t-transparent rounded-full animate-spin"
+           style={{ borderColor: ROSE, borderTopColor: 'transparent' }} />
+    </div>
+  )
 
   return (
-    <main className="min-h-screen py-10" style={{ background: CREAM }}>
+    <main className="min-h-screen py-10 bg-white">
       <div className="max-w-3xl mx-auto px-4 sm:px-6">
-        <h1 className="font-cursive text-4xl font-bold mb-8" style={{ color: BERRY }}>My Profile</h1>
+        <h1 className="font-bold text-4xl mb-8" style={{ fontFamily: ACCT_SERIF, color: BERRY }}>
+          My Profile
+        </h1>
 
         {/* Avatar card */}
         <div className="flex items-center gap-4 bg-white rounded-[16px] p-5 shadow-card mb-6"
              style={{ border: `1px solid ${BORDER}` }}>
-          <div
-            className="w-16 h-16 rounded-full flex items-center justify-center text-white font-serif font-bold text-2xl flex-shrink-0"
-            style={{ background: `linear-gradient(135deg, ${PINK}, ${ROSE})` }}
-          >
+          <div className="w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-2xl flex-shrink-0"
+               style={{ background: `linear-gradient(135deg, ${PINK}, ${ROSE})`, fontFamily: ACCT_SERIF }}>
             {user?.name?.[0]?.toUpperCase()}
           </div>
           <div>
-            <h2 className="font-serif text-xl font-bold" style={{ color: BERRY }}>{user?.name}</h2>
+            <h2 className="text-xl font-bold" style={{ fontFamily: ACCT_SERIF, color: BERRY }}>{user?.name}</h2>
             <p className="font-sans text-sm" style={{ color: MAUVE }}>{user?.email}</p>
-            <span
-              className="inline-block mt-1 text-xs font-medium px-3 py-0.5 rounded-full capitalize"
-              style={{ background: PEACH_LT, color: BERRY, border: `1px solid ${BORDER}` }}
-            >
+            <span className="inline-block mt-1 text-xs font-medium px-3 py-0.5 rounded-full capitalize font-sans"
+                  style={{ background: PEACH_LT, color: BERRY, border: `1px solid ${BORDER}` }}>
               {user?.role}
             </span>
           </div>
@@ -176,16 +148,9 @@ export default function ProfilePage() {
         {/* Tabs */}
         <div className="flex gap-1 rounded-xl p-1 mb-6" style={{ background: PEACH_LT }}>
           {TABS.map(({ key, label, Icon }) => (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
+            <button key={key} onClick={() => setTab(key)}
               className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium font-sans transition-all"
-              style={
-                tab === key
-                  ? { background: 'white', color: BERRY, boxShadow: `0 1px 4px rgba(224,92,136,0.15)` }
-                  : { color: PINK }
-              }
-            >
+              style={tab === key ? { background: 'white', color: BERRY, boxShadow: `0 1px 4px rgba(224,92,136,0.15)` } : { color: PINK }}>
               <Icon size={14} /> {label}
             </button>
           ))}
@@ -194,109 +159,78 @@ export default function ProfilePage() {
         {/* Tab content */}
         <div className="bg-white rounded-[16px] p-6 shadow-card" style={{ border: `1px solid ${BORDER}` }}>
 
-          {/* Profile tab */}
           {tab === 'profile' && (
             <form onSubmit={handleProfileSave} className="space-y-4">
-              <InputField label="Full Name" value={profileForm.name}
-                onChange={(e) => setProfileForm((p) => ({ ...p, name: e.target.value }))} />
-              <InputField label="Mobile" value={profileForm.mobile} placeholder="9876543210"
-                onChange={(e) => setProfileForm((p) => ({ ...p, mobile: e.target.value }))} />
-              <InputField label="Email" value={user?.email || ''} disabled
-                onChange={() => {}} />
+              <InputField label="Full Name" value={profileForm.name} onChange={(e) => setProfileForm(p => ({ ...p, name: e.target.value }))} />
+              <InputField label="Mobile" value={profileForm.mobile} placeholder="9876543210" onChange={(e) => setProfileForm(p => ({ ...p, mobile: e.target.value }))} />
+              <InputField label="Email" value={user?.email || ''} disabled onChange={() => {}} />
               <p className="text-xs font-sans" style={{ color: PINK }}>Email cannot be changed</p>
               <SaveBtn saving={savingProfile} label="Save Changes" savingLabel="Saving…" />
             </form>
           )}
 
-          {/* Addresses tab */}
           {tab === 'addresses' && (
             <div className="space-y-4">
               {user?.addresses?.length === 0 && !showAddrForm && (
-                <p className="font-sans text-sm text-center py-6" style={{ color: MAUVE }}>
-                  No saved addresses yet.
-                </p>
+                <p className="font-sans text-sm text-center py-6" style={{ color: MAUVE }}>No saved addresses yet.</p>
               )}
-
               {user?.addresses?.map((addr, i) => (
                 <div key={i} className="p-4 rounded-xl flex justify-between items-start"
                      style={{ background: PEACH_LT, border: `1px solid ${BORDER}` }}>
                   <div className="font-sans text-sm space-y-0.5">
                     <p className="font-semibold" style={{ color: BERRY }}>{addr.fullName}</p>
                     <p className="text-xs" style={{ color: MAUVE }}>{addr.mobile}</p>
-                    <p className="text-xs" style={{ color: MAUVE }}>
-                      {addr.addressLine}, {addr.city}, {addr.state} — {addr.pincode}
-                    </p>
+                    <p className="text-xs" style={{ color: MAUVE }}>{addr.addressLine}, {addr.city}, {addr.state} — {addr.pincode}</p>
                   </div>
-                  <button
-                    onClick={() => handleDeleteAddress(i)}
-                    className="text-red-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition-all flex-shrink-0"
-                  >
+                  <button onClick={() => handleDeleteAddress(i)} className="text-red-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition-all flex-shrink-0">
                     <Trash2 size={15} />
                   </button>
                 </div>
               ))}
-
               {showAddrForm && (
-                <form onSubmit={handleAddAddress}
-                      className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-xl"
+                <form onSubmit={handleAddAddress} className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-xl"
                       style={{ background: PEACH_LT, border: `1px solid ${BORDER}` }}>
                   {Object.keys(emptyAddr).map((key) => (
                     <div key={key} className={key === 'addressLine' ? 'sm:col-span-2' : ''}>
-                      <label className="block text-xs font-semibold mb-1 capitalize font-sans"
-                             style={{ color: BERRY }}>
+                      <label className="block text-xs font-semibold mb-1 capitalize font-sans" style={{ color: BERRY }}>
                         {key.replace(/([A-Z])/g, ' $1')}
                       </label>
-                      <input
-                        value={newAddr[key]}
-                        onChange={(e) => setNewAddr((p) => ({ ...p, [key]: e.target.value }))}
-                        required
+                      <input value={newAddr[key]} onChange={(e) => setNewAddr(p => ({ ...p, [key]: e.target.value }))} required
                         className="w-full border rounded-xl px-3 py-2 text-sm font-sans outline-none transition-all"
                         style={{ borderColor: BORDER, color: BERRY, background: 'white' }}
-                        onFocus={(e)  => { e.target.style.borderColor = ROSE; e.target.style.boxShadow = `0 0 0 2px ${ROSE}22` }}
-                        onBlur={(e)   => { e.target.style.borderColor = BORDER; e.target.style.boxShadow = 'none' }}
-                      />
+                        onFocus={(e) => { e.target.style.borderColor = ROSE; e.target.style.boxShadow = `0 0 0 2px ${ROSE}22` }}
+                        onBlur={(e)  => { e.target.style.borderColor = BORDER; e.target.style.boxShadow = 'none' }} />
                     </div>
                   ))}
                   <div className="sm:col-span-2 flex gap-2">
                     <button type="submit" disabled={savingAddr}
                       className="flex-1 text-white py-2 rounded-xl text-sm font-semibold font-sans transition-all disabled:opacity-60"
-                      style={{ background: ROSE }}>
-                      {savingAddr ? 'Saving…' : 'Add Address'}
-                    </button>
+                      style={{ background: ROSE }}>{savingAddr ? 'Saving…' : 'Add Address'}</button>
                     <button type="button" onClick={() => setShowAddrForm(false)}
                       className="flex-1 border py-2 rounded-xl text-sm font-semibold font-sans transition-all"
-                      style={{ borderColor: BORDER, color: BERRY }}>
-                      Cancel
-                    </button>
+                      style={{ borderColor: BORDER, color: BERRY }}>Cancel</button>
                   </div>
                 </form>
               )}
-
               {!showAddrForm && (
-                <button
-                  onClick={() => setShowAddrForm(true)}
+                <button onClick={() => setShowAddrForm(true)}
                   className="flex items-center gap-2 text-sm font-medium font-sans transition-colors"
-                  style={{ color: ROSE }}
-                >
+                  style={{ color: ROSE }}>
                   <Plus size={15} /> Add New Address
                 </button>
               )}
             </div>
           )}
 
-          {/* Password tab */}
           {tab === 'password' && (
             <form onSubmit={handlePasswordChange} className="space-y-4">
               {[
                 { key: 'currentPassword', label: 'Current Password', ph: 'Enter current password' },
-                { key: 'newPassword',     label: 'New Password',     ph: 'Min 6 characters'        },
-                { key: 'confirmPassword', label: 'Confirm Password',  ph: 'Re-enter new password'   },
+                { key: 'newPassword',     label: 'New Password',     ph: 'Min 6 characters' },
+                { key: 'confirmPassword', label: 'Confirm Password',  ph: 'Re-enter new password' },
               ].map((f) => (
-                <InputField
-                  key={f.key} type="password" label={f.label} placeholder={f.ph}
-                  value={pwdForm[f.key]}
-                  onChange={(e) => setPwdForm((p) => ({ ...p, [f.key]: e.target.value }))}
-                />
+                <InputField key={f.key} type="password" label={f.label} placeholder={f.ph}
+                  value={pwdForm[f.key]} onChange={(e) => setPwdForm(p => ({ ...p, [f.key]: e.target.value }))} />
               ))}
               <SaveBtn saving={savingPwd} label="Change Password" savingLabel="Changing…" />
             </form>
