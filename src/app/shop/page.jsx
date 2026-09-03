@@ -1,4 +1,29 @@
 'use client'
+/*
+  ROOT CAUSE FIX — filter sync bug
+  ─────────────────────────────────────────────────────────────
+  OLD BUG: `filters` was a useState object initialised once at
+  mount from searchParams ([] dep array). Next.js client-side
+  navigation never remounts the page, so header links like
+  ?filter=isNewArrival changed the URL but the stale `filters`
+  state was never updated — fetchProducts fired with the old values.
+  `userInteracted` ref then permanently blocked any URL re-read.
+
+  FIX: URL is the SINGLE source of truth.
+  • `filters` state is eliminated entirely.
+  • Every filter value is derived directly from `searchParams`
+    (a stable Next.js hook that re-renders the component when
+    the URL changes, including client-side navigation).
+  • `fetchProducts` depends on a stable query-string key built
+    from searchParams — any URL change (header links, sidebar,
+    browser back/forward, direct load, refresh) triggers a new
+    fetch automatically with zero manual sync code.
+  • User interactions call `updateFilter`, which uses
+    router.replace to write back to the URL — the resulting
+    searchParams change re-renders and re-fetches.
+  • clearFilters replaces to /shop (no params) — products reset.
+  ─────────────────────────────────────────────────────────────
+*/
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -172,18 +197,29 @@ function CategoryPills({ activeCategory, onSelect }) {
 
 /* ═══ FILTER SIDEBAR ═══ */
 function FilterSidebar({ filters, updateFilter, clearFilters, hasActiveFilters, onClose, isDrawer }) {
+  /* Local controlled states for inputs that debounce or need Apply */
   const [searchInput,   setSearchInput]   = useState(filters.search)
   const [minPriceInput, setMinPriceInput] = useState(filters.minPrice)
   const [maxPriceInput, setMaxPriceInput] = useState(filters.maxPrice)
   const [categories,    setCategories]    = useState([])
   const searchDebounce = useRef(null)
 
-  /* Fetch categories from backend */
+  /* Fetch categories once */
   useEffect(() => {
     fetch(`${BASE}product/categories`).then((r) => r.json())
       .then((d) => { if (d.success) setCategories(d.data) }).catch(() => {})
   }, [])
 
+  /*
+    Sync local inputs when filters change from OUTSIDE (URL navigation).
+    This is what makes sidebar controls reflect the URL when the user
+    clicks a header link.
+  */
+  useEffect(() => { setSearchInput(filters.search) },     [filters.search])
+  useEffect(() => { setMinPriceInput(filters.minPrice) }, [filters.minPrice])
+  useEffect(() => { setMaxPriceInput(filters.maxPrice) }, [filters.maxPrice])
+
+  /* Debounced search */
   useEffect(() => {
     clearTimeout(searchDebounce.current)
     searchDebounce.current = setTimeout(() => {
@@ -193,13 +229,11 @@ function FilterSidebar({ filters, updateFilter, clearFilters, hasActiveFilters, 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchInput])
 
-  useEffect(() => { setSearchInput(filters.search) },     [filters.search])
-  useEffect(() => { setMinPriceInput(filters.minPrice) }, [filters.minPrice])
-  useEffect(() => { setMaxPriceInput(filters.maxPrice) }, [filters.maxPrice])
+  const applyPrice = () => {
+    updateFilter('minPrice', minPriceInput)
+    updateFilter('maxPrice', maxPriceInput)
+  }
 
-  const applyPrice = () => { updateFilter('minPrice', minPriceInput); updateFilter('maxPrice', maxPriceInput) }
-
-  /* Tighter section head — less vertical space */
   const SectionHead = ({ icon: Icon, text }) => (
     <div className="flex items-center gap-1.5 mb-2">
       <Icon size={11} strokeWidth={2.5} style={{ color: ROSE }} />
@@ -231,10 +265,9 @@ function FilterSidebar({ filters, updateFilter, clearFilters, hasActiveFilters, 
 
         <Divider />
 
-        {/* Category — dynamic from backend, replaces Collection */}
+        {/* Category */}
         <SectionHead icon={Tag} text="Category" />
         <div className="space-y-0.5">
-          {/* "All" option */}
           <button
             onClick={() => updateFilter('category', '')}
             className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-sans font-medium transition-all flex items-center gap-2"
@@ -248,13 +281,11 @@ function FilterSidebar({ filters, updateFilter, clearFilters, hasActiveFilters, 
             return (
               <button key={name}
                 onClick={() => updateFilter('category', active ? '' : name)}
-                className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-sans font-medium transition-all flex items-center justify-between gap-2"
+                className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-sans font-medium transition-all flex items-center gap-2"
                 style={{ background: active ? ROSE : 'transparent', color: active ? '#fff' : BERRY }}>
-                <span className="flex items-center gap-2 min-w-0">
-                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 border"
-                    style={active ? { background: '#fff', borderColor: '#fff' } : { borderColor: PINK }} />
-                  <span className="truncate">{name}</span>
-                </span>
+                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 border"
+                  style={active ? { background: '#fff', borderColor: '#fff' } : { borderColor: PINK }} />
+                <span className="truncate">{name}</span>
               </button>
             )
           })}
@@ -321,7 +352,26 @@ function SkeletonCard() {
   )
 }
 
-/* ═══ MAIN SHOP CONTENT ═══ */
+/* ═══════════════════════════════════════════════════════════════════
+   MAIN SHOP CONTENT
+   ─────────────────────────────────────────────────────────────────
+   URL IS THE SINGLE SOURCE OF TRUTH.
+
+   `filters` is NOT a useState — it is derived on every render
+   directly from `searchParams`. Because Next.js re-renders this
+   component whenever searchParams changes (client nav, history,
+   router.replace), ALL transitions update the UI automatically:
+     • Header link click → URL changes → component re-renders →
+       filters updated → fetchProducts re-runs with new params
+     • Sidebar control → updateFilter → router.replace → URL changes
+       → same pipeline fires
+     • Direct URL load / refresh → Suspense boundary, component
+       mounts with correct searchParams already populated
+
+   `updateFilter` / `clearFilters` write ONLY to the URL.
+   The `filters` object computed from searchParams is passed down
+   to the sidebar so it always reflects the live URL state.
+═══════════════════════════════════════════════════════════════════ */
 function ShopContent() {
   const searchParams = useSearchParams()
   const router       = useRouter()
@@ -330,42 +380,34 @@ function ShopContent() {
   const [loading,     setLoading]     = useState(true)
   const [pagination,  setPagination]  = useState({ total: 0, pages: 1, page: 1 })
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const userInteracted = useRef(false)
 
-  const [filters, setFilters] = useState({
-    sort: '', size: '', filter: '', category: '', search: '', minPrice: '', maxPrice: '', page: 1,
-  })
+  /*
+    ─── DERIVE FILTERS DIRECTLY FROM URL (no intermediate state) ───
+    This is the critical change. Previously these lived in useState
+    initialised once with [] deps. Now they are read on every render
+    from searchParams, so any URL change immediately produces the
+    correct filter values.
+  */
+  const filters = {
+    sort:     searchParams.get('sort')     ?? '',
+    size:     searchParams.get('size')     ?? '',
+    filter:   searchParams.get('filter')   ?? '',
+    category: searchParams.get('category') ?? '',
+    search:   searchParams.get('search')   ?? '',
+    minPrice: searchParams.get('minPrice') ?? '',
+    maxPrice: searchParams.get('maxPrice') ?? '',
+    page:     Number(searchParams.get('page')) || 1,
+  }
 
-  useEffect(() => {
-    if (userInteracted.current) return
-    setFilters({
-      sort:     searchParams.get('sort')     || '',
-      size:     searchParams.get('size')     || '',
-      filter:   searchParams.get('filter')   || '',
-      category: searchParams.get('category') || '',
-      search:   searchParams.get('search')   || '',
-      minPrice: searchParams.get('minPrice') || '',
-      maxPrice: searchParams.get('maxPrice') || '',
-      page:     Number(searchParams.get('page')) || 1,
-    })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  useEffect(() => {
-    if (!userInteracted.current) return
-    const params = new URLSearchParams()
-    if (filters.sort)     params.set('sort',     filters.sort)
-    if (filters.size)     params.set('size',     filters.size)
-    if (filters.filter)   params.set('filter',   filters.filter)
-    if (filters.category) params.set('category', filters.category)
-    if (filters.search)   params.set('search',   filters.search)
-    if (filters.minPrice) params.set('minPrice', filters.minPrice)
-    if (filters.maxPrice) params.set('maxPrice', filters.maxPrice)
-    if (filters.page > 1) params.set('page',     String(filters.page))
-    const qs = params.toString()
-    router.replace(qs ? `/shop?${qs}` : '/shop', { scroll: false })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters])
+  /*
+    Build a stable query-string key from all filter values.
+    fetchProducts runs whenever this key changes — which happens
+    on EVERY URL change including header link clicks.
+  */
+  const queryKey = [
+    filters.sort, filters.size, filters.filter, filters.category,
+    filters.search, filters.minPrice, filters.maxPrice, filters.page,
+  ].join('|')
 
   const fetchProducts = useCallback(async () => {
     setLoading(true)
@@ -374,35 +416,73 @@ function ShopContent() {
       if (filters.sort)     params.set('sort',     filters.sort)
       if (filters.size)     params.set('size',     filters.size)
       if (filters.search)   params.set('search',   filters.search)
+      /*
+        Map ?filter=isNewArrival → ?isNewArrival=true for the API.
+        This was already correct — it was just never being reached
+        because filters.filter was always '' due to the stale state.
+      */
       if (filters.filter)   params.set(filters.filter, 'true')
       if (filters.category) params.set('category', filters.category)
       if (filters.minPrice) params.set('minPrice', filters.minPrice)
       if (filters.maxPrice) params.set('maxPrice', filters.maxPrice)
-      params.set('page', String(filters.page))
+      params.set('page',  String(filters.page))
       params.set('limit', '20')
+
       const res  = await fetch(`${BASE}product?${params}`, { cache: 'no-store' })
       const data = await res.json()
-      if (data.success) { setProducts(data.data); setPagination(data.pagination) }
+      if (data.success) {
+        setProducts(data.data)
+        setPagination(data.pagination)
+      }
     } catch { setProducts([]) }
     finally { setLoading(false) }
-  }, [filters])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queryKey])   /* ← depends on queryKey, not on the filters object */
 
+  /* Re-fetch whenever any URL param changes */
   useEffect(() => { fetchProducts() }, [fetchProducts])
 
+  /*
+    updateFilter — writes to URL only.
+    The resulting URL change re-renders ShopContent with new
+    searchParams → new filters object → new queryKey → new fetch.
+    Also resets page to 1 on every filter change.
+  */
   const updateFilter = useCallback((key, value) => {
-    userInteracted.current = true
-    setFilters((prev) => ({ ...prev, [key]: value, page: 1 }))
-  }, [])
+    const current = new URLSearchParams(searchParams.toString())
+    if (value) {
+      current.set(key, value)
+    } else {
+      current.delete(key)
+    }
+    /* Reset page when changing any filter */
+    current.delete('page')
+    const qs = current.toString()
+    router.replace(qs ? `/shop?${qs}` : '/shop', { scroll: false })
+  }, [searchParams, router])
 
+  /*
+    clearFilters — navigates to bare /shop, clearing ALL params.
+    Produces an immediate re-render with empty filters → fetchAll.
+  */
   const clearFilters = useCallback(() => {
-    userInteracted.current = true
-    setFilters({ sort: '', size: '', filter: '', category: '', search: '', minPrice: '', maxPrice: '', page: 1 })
-  }, [])
+    router.replace('/shop', { scroll: false })
+  }, [router])
 
-  const hasActiveFilters = !!(filters.sort || filters.size || filters.filter || filters.search || filters.category || filters.minPrice || filters.maxPrice)
+  const hasActiveFilters = !!(
+    filters.sort || filters.size || filters.filter ||
+    filters.search || filters.category || filters.minPrice || filters.maxPrice
+  )
+
+  /* Pagination helpers — also write to URL */
+  const goToPage = useCallback((p) => {
+    const current = new URLSearchParams(searchParams.toString())
+    if (p > 1) { current.set('page', String(p)) } else { current.delete('page') }
+    const qs = current.toString()
+    router.replace(qs ? `/shop?${qs}` : '/shop', { scroll: false })
+  }, [searchParams, router])
 
   return (
-    /* WHITE background on shop page */
     <main className="min-h-screen bg-white">
 
       <PromoBannerSlider />
@@ -422,7 +502,7 @@ function ShopContent() {
       {/* Main layout */}
       <div className="w-full px-4 sm:px-6 pb-12 flex gap-6 lg:gap-8 items-start">
 
-        {/* Desktop sidebar — wider, no scrollbar */}
+        {/* Desktop sidebar */}
         <aside className="hidden lg:block flex-shrink-0 rounded-2xl overflow-hidden"
           style={{
             width: '268px',
@@ -437,7 +517,13 @@ function ShopContent() {
             boxShadow: `0 4px 16px rgba(224,92,136,0.10)`,
           }}>
           <style>{`aside::-webkit-scrollbar{display:none}`}</style>
-          <FilterSidebar filters={filters} updateFilter={updateFilter} clearFilters={clearFilters} hasActiveFilters={hasActiveFilters} isDrawer={false} />
+          <FilterSidebar
+            filters={filters}
+            updateFilter={updateFilter}
+            clearFilters={clearFilters}
+            hasActiveFilters={hasActiveFilters}
+            isDrawer={false}
+          />
         </aside>
 
         {/* Product area */}
@@ -457,7 +543,7 @@ function ShopContent() {
             </div>
           </div>
 
-          {/* Desktop: active tags + sort */}
+          {/* Desktop: active chips + sort */}
           <div className="hidden lg:flex items-center justify-between mb-5">
             <div className="flex items-center gap-2 flex-wrap">
               {filters.category && (
@@ -497,9 +583,17 @@ function ShopContent() {
                 <Search size={28} strokeWidth={1.5} style={{ color: PINK }} />
               </div>
               <h3 className="text-xl font-bold mb-2" style={{ fontFamily: 'var(--font-playfair), serif', color: BERRY }}>
-                {filters.search ? `No results for "${filters.search}"` : filters.category ? `No kurtis in "${filters.category}" yet` : 'No kurtis found'}
+                {filters.search
+                  ? `No results for "${filters.search}"`
+                  : filters.category
+                    ? `No kurtis in "${filters.category}" yet`
+                    : filters.filter
+                      ? `No ${filters.filter.replace('is','').replace(/([A-Z])/g,' $1').trim()} products yet`
+                      : 'No kurtis found'}
               </h3>
-              <p className="font-sans text-sm mb-6 max-w-xs" style={{ color: MAUVE }}>Try a different search or clear filters to browse all styles.</p>
+              <p className="font-sans text-sm mb-6 max-w-xs" style={{ color: MAUVE }}>
+                Try a different search or clear filters to browse all styles.
+              </p>
               <button onClick={clearFilters} className="inline-flex items-center gap-2 text-white px-6 py-2.5 rounded-full text-sm font-medium font-sans" style={{ background: ROSE }}>
                 <X size={14} /> Clear Filters
               </button>
@@ -511,7 +605,9 @@ function ShopContent() {
               </div>
               {pagination.pages > 1 && (
                 <div className="flex justify-center items-center gap-2 mt-10">
-                  <button onClick={() => setFilters((f) => ({ ...f, page: Math.max(1, f.page - 1) }))} disabled={filters.page === 1}
+                  <button
+                    onClick={() => goToPage(Math.max(1, filters.page - 1))}
+                    disabled={filters.page === 1}
                     className="flex items-center gap-1 px-4 py-2 rounded-xl border text-sm font-sans disabled:opacity-40 transition-colors"
                     style={{ borderColor: BORDER, color: BERRY, background: WHITE }}>
                     <ChevronLeft size={14} /> Prev
@@ -519,7 +615,9 @@ function ShopContent() {
                   <span className="px-4 py-2 text-sm font-medium font-sans" style={{ color: BERRY }}>
                     {filters.page} / {pagination.pages}
                   </span>
-                  <button onClick={() => setFilters((f) => ({ ...f, page: Math.min(pagination.pages, f.page + 1) }))} disabled={filters.page === pagination.pages}
+                  <button
+                    onClick={() => goToPage(Math.min(pagination.pages, filters.page + 1))}
+                    disabled={filters.page === pagination.pages}
                     className="flex items-center gap-1 px-4 py-2 rounded-xl border text-sm font-sans disabled:opacity-40 transition-colors"
                     style={{ borderColor: BORDER, color: BERRY, background: WHITE }}>
                     Next <ChevronRight size={14} />
@@ -538,7 +636,14 @@ function ShopContent() {
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 rounded-full" style={{ background: BORDER }} />
         </div>
-        <FilterSidebar filters={filters} updateFilter={updateFilter} clearFilters={clearFilters} hasActiveFilters={hasActiveFilters} onClose={() => setSidebarOpen(false)} isDrawer={true} />
+        <FilterSidebar
+          filters={filters}
+          updateFilter={updateFilter}
+          clearFilters={clearFilters}
+          hasActiveFilters={hasActiveFilters}
+          onClose={() => setSidebarOpen(false)}
+          isDrawer={true}
+        />
       </div>
     </main>
   )
@@ -548,7 +653,8 @@ export default function ShopPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-t-transparent rounded-full animate-spin" style={{ borderColor: ROSE, borderTopColor: 'transparent' }} />
+        <div className="w-10 h-10 border-4 border-t-transparent rounded-full animate-spin"
+             style={{ borderColor: ROSE, borderTopColor: 'transparent' }} />
       </div>
     }>
       <ShopContent />
