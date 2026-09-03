@@ -64,22 +64,29 @@ export default function OfferSection() {
   const [loading,  setLoading]  = useState(true)
 
   useEffect(() => {
-    fetch(`${BASE}product?limit=50`, { cache: 'no-store' })
+    fetch(`${BASE}product?limit=100`, { cache: 'no-store' })
       .then(r => r.json())
       .then(d => {
         if (d.success) {
-          const sorted = (d.data||[])
-            .filter(p => p.discountPrice && p.discountPrice > 0 && p.discountPrice < p.price)
-            .sort((a,b) => discountPct(b) - discountPct(a))
-            .slice(0,3)
-          setProducts(sorted)
+          /* ── Only show products with ≥60% discount ── */
+          const qualifying = (d.data || [])
+            .filter(p => {
+              if (!p.discountPrice || p.discountPrice <= 0 || p.discountPrice >= p.price) return false
+              return discountPct(p) >= 60
+            })
+            .sort((a, b) => discountPct(b) - discountPct(a))
+            .slice(0, 3)
+          setProducts(qualifying)
         }
       })
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
 
-  const maxPct = products.length > 0 ? discountPct(products[0]) : 70
+  /* Hide entire section (not just right panel) if no qualifying products */
+  if (!loading && products.length === 0) return null
+
+  const maxPct = products.length > 0 ? discountPct(products[0]) : 60
 
   return (
     <section className="w-full px-4 md:px-8 lg:px-16 py-12">
@@ -141,7 +148,7 @@ export default function OfferSection() {
             </div>
           </div>
 
-          {/* RIGHT PANEL — peach→cream */}
+          {/* RIGHT PANEL — only rendered when loading or qualifying products exist */}
           {(loading || products.length > 0) && (
             <div className="relative flex-1 overflow-hidden flex flex-col justify-center px-5 py-8 md:px-8"
                  style={{ background: 'linear-gradient(135deg, #FBDBBB 0%, #FCFAE0 100%)' }}>

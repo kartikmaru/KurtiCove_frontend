@@ -238,10 +238,10 @@ function ReviewsContent({ productId }) {
   )
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-start pt-2">
-      {/* Summary */}
-      <div className="w-full lg:w-60 flex-shrink-0">
-        <div className="rounded-2xl p-5 flex flex-col gap-4 border" style={{ background: PEACH_LT, borderColor: BORDER }}>
+    <div className="flex flex-col lg:flex-row gap-6 lg:gap-12 items-start pt-2">
+      {/* Summary card — full width on mobile, fixed width on desktop */}
+      <div className="w-full lg:w-56 flex-shrink-0">
+        <div className="rounded-2xl p-4 md:p-5 flex flex-col gap-4 border" style={{ background: PEACH_LT, borderColor: BORDER }}>
           <div className="flex flex-col items-center gap-1.5">
             <span className="font-bold leading-none" style={{ fontFamily: 'var(--font-playfair),serif', color: BERRY, fontSize: '3.5rem' }}>
               {avg.toFixed(1)}
@@ -289,15 +289,18 @@ function ProductTabs({ product, productId, reviewCount }) {
 
   return (
     <section className="mt-12 w-full">
-      {/* Tab bar */}
+      {/* Tab bar — horizontally scrollable on mobile, no visible scrollbar */}
       <div className="border-b" style={{ borderColor: BORDER }}>
-        <div className="flex gap-0 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+        <style>{`.pdp-tab-bar::-webkit-scrollbar{display:none}`}</style>
+        <div
+          className="pdp-tab-bar flex gap-0 overflow-x-auto"
+          style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
+        >
           {tabs.map((tab) => (
             <button key={tab.key} onClick={() => setActive(tab.key)}
               className="relative flex-shrink-0 px-4 md:px-6 py-3 text-sm font-sans font-medium transition-colors whitespace-nowrap"
               style={{ color: active === tab.key ? BERRY : MAUVE }}>
               {tab.label}
-              {/* Rose underline on active */}
               {active === tab.key && (
                 <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full" style={{ background: ROSE }} />
               )}
@@ -306,8 +309,8 @@ function ProductTabs({ product, productId, reviewCount }) {
         </div>
       </div>
 
-      {/* Tab content */}
-      <div className="py-7 md:py-8">
+      {/* Tab content — py-6 on mobile, py-8 on desktop */}
+      <div className="py-6 md:py-8">
 
         {/* DESCRIPTION */}
         {active === 'description' && (
@@ -363,12 +366,12 @@ function ProductTabs({ product, productId, reviewCount }) {
             <p className="text-xs font-sans mb-4" style={{ color: MAUVE }}>
               All measurements are approximate and given in <strong style={{ color: BERRY }}>inches</strong>. Size availability depends on stock.
             </p>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm font-sans border-collapse min-w-[340px]">
+            <div className="overflow-x-auto -mx-1" style={{ WebkitOverflowScrolling: 'touch' }}>
+              <table className="text-sm font-sans border-collapse" style={{ minWidth: 300, width: '100%' }}>
                 <thead>
                   <tr style={{ background: PEACH_LT }}>
                     {['Size','Chest','Waist','Length'].map((h) => (
-                      <th key={h} className="px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider"
+                      <th key={h} className="px-3 py-2 text-left text-xs font-bold uppercase tracking-wider"
                           style={{ color: BERRY, borderBottom: `2px solid ${BORDER}` }}>{h}</th>
                     ))}
                   </tr>
@@ -378,12 +381,12 @@ function ProductTabs({ product, productId, reviewCount }) {
                     const isProductSize = product.sizes?.includes(row.size)
                     return (
                       <tr key={row.size} style={{ background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
-                        <td className="px-4 py-2.5 font-semibold" style={{ color: isProductSize ? ROSE : BERRY, borderBottom: `1px solid ${BORDER}` }}>
+                        <td className="px-3 py-2 font-semibold" style={{ color: isProductSize ? ROSE : BERRY, borderBottom: `1px solid ${BORDER}` }}>
                           {row.size}{isProductSize && <span className="ml-1 text-[10px]" style={{ color: ROSE }}>✓</span>}
                         </td>
-                        <td className="px-4 py-2.5" style={{ color: MAUVE, borderBottom: `1px solid ${BORDER}` }}>{row.chest}"</td>
-                        <td className="px-4 py-2.5" style={{ color: MAUVE, borderBottom: `1px solid ${BORDER}` }}>{row.waist}"</td>
-                        <td className="px-4 py-2.5" style={{ color: MAUVE, borderBottom: `1px solid ${BORDER}` }}>{row.length}"</td>
+                        <td className="px-3 py-2" style={{ color: MAUVE, borderBottom: `1px solid ${BORDER}` }}>{row.chest}"</td>
+                        <td className="px-3 py-2" style={{ color: MAUVE, borderBottom: `1px solid ${BORDER}` }}>{row.waist}"</td>
+                        <td className="px-3 py-2" style={{ color: MAUVE, borderBottom: `1px solid ${BORDER}` }}>{row.length}"</td>
                       </tr>
                     )
                   })}
