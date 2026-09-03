@@ -4,6 +4,7 @@ import ReduxProvider from '../redux/ReduxProvider'
 import { Toaster } from 'react-hot-toast'
 import Header from '../components/user/Header'
 import Footer from '../components/user/Footer'
+import Preloader from '../components/user/Preloader'
 
 const playfair = Playfair_Display({
   subsets: ['latin'],
@@ -37,6 +38,8 @@ export default function RootLayout({ children }) {
     <html lang="en" className={`${playfair.variable} ${poppins.variable} ${dancing.variable}`}>
       <body className="font-sans bg-[#FCFAE0] text-[#7B2447] antialiased">
         <ReduxProvider>
+          {/* Preloader — full-screen overlay on first session visit */}
+          <Preloader />
           {/* Header renders on every page — fixed, floats above content */}
           <Header />
           {/*

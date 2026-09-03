@@ -250,16 +250,30 @@ function HeaderInner() {
             {/* ── DESKTOP NAV ───────────────────────────────── */}
             <nav className="hidden md:flex items-center gap-1 lg:gap-2">
               {navLinks.map((link) => {
+                /*
+                  MUTUALLY EXCLUSIVE active logic:
+                  ─────────────────────────────────────────────
+                  • Home         → pathname === '/'
+                  • Shop         → pathname === '/shop' AND no ?filter param in URL
+                  • New Arrivals → pathname === '/shop' AND ?filter=isNewArrival
+                  • Best Sellers → pathname === '/shop' AND ?filter=isBestSeller
+                  ─────────────────────────────────────────────
+                  This prevents Shop + New Arrivals from being
+                  simultaneously active when ?filter= is present.
+                */
+                const currentFilter = searchParams.get('filter') || ''
+
                 let isActive
-                if (!link.href.includes('?')) {
-                  isActive = pathname === link.href
+                if (link.href === '/') {
+                  isActive = pathname === '/'
+                } else if (link.href === '/shop') {
+                  // Active ONLY on /shop with no filter param
+                  isActive = pathname === '/shop' && currentFilter === ''
                 } else {
-                  const [basePath, query] = link.href.split('?')
-                  const param = new URLSearchParams(query)
-                  const filterVal = param.get('filter')
-                  isActive =
-                    pathname === basePath &&
-                    (filterVal ? searchParams.get('filter') === filterVal : true)
+                  // Filtered nav items — match exact filter value
+                  const [, query] = link.href.split('?')
+                  const filterVal = new URLSearchParams(query).get('filter')
+                  isActive = pathname === '/shop' && currentFilter === filterVal
                 }
 
                 return (
@@ -537,16 +551,17 @@ function HeaderInner() {
         {/* Drawer nav */}
         <nav className="flex-1 px-4 py-5 space-y-1 overflow-y-auto">
           {navLinks.map((link) => {
+            const currentFilter = searchParams.get('filter') || ''
+
             let isActive
-            if (!link.href.includes('?')) {
-              isActive = pathname === link.href
+            if (link.href === '/') {
+              isActive = pathname === '/'
+            } else if (link.href === '/shop') {
+              isActive = pathname === '/shop' && currentFilter === ''
             } else {
-              const [basePath, query] = link.href.split('?')
-              const param = new URLSearchParams(query)
-              const filterVal = param.get('filter')
-              isActive =
-                pathname === basePath &&
-                (filterVal ? searchParams.get('filter') === filterVal : true)
+              const [, query] = link.href.split('?')
+              const filterVal = new URLSearchParams(query).get('filter')
+              isActive = pathname === '/shop' && currentFilter === filterVal
             }
             return (
               <Link
