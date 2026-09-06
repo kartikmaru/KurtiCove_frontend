@@ -59,7 +59,7 @@ function ThankYouContent() {
         </div>
 
         <h1
-          className="font-cursive text-4xl md:text-5xl font-bold mb-3"
+          className="font-sans text-4xl md:text-5xl font-bold mb-3"
           style={{ color: BERRY }}
         >
           Order Placed!

@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useSelector, useDispatch } from 'react-redux'
 import {
-  FiShoppingBag, FiMenu, FiX,
+  FiShoppingCart, FiMenu, FiX,
   FiLogOut, FiPackage, FiChevronRight, FiSearch,
 } from 'react-icons/fi'
 import { AiOutlineHeart, AiFillHeart } from 'react-icons/ai'
@@ -93,7 +93,9 @@ function HeaderInner() {
   const [searchOpen,  setSearchOpen]  = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
 
-  const cartQty      = useSelector((s) => s.cart.totalQty)
+  /* Badge counts unique line items (not total quantity) */
+  const cartItems    = useSelector((s) => s.cart.items)
+  const cartBadge    = cartItems.length   // unique products in cart
   const dispatch     = useDispatch()
   const pathname     = usePathname()
   const router       = useRouter()
@@ -371,11 +373,11 @@ function HeaderInner() {
               <Link href="/cart" title="Cart" aria-label="Cart"
                 className={`${iconBtn} hover:bg-white/10`}
                 style={iconBtnStyle}>
-                <FiShoppingBag className="w-[18px] h-[18px] md:w-[21px] md:h-[21px]" />
-                {cartQty > 0 && (
+                <FiShoppingCart className="w-[18px] h-[18px] md:w-[21px] md:h-[21px]" />
+                {cartBadge > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 text-[8px] font-bold rounded-full min-w-[15px] h-[15px] flex items-center justify-center px-0.5 leading-none"
                         style={{ background: THEME.cartBadge, color: THEME.cartBadgeText }}>
-                    {cartQty > 99 ? '99+' : cartQty}
+                    {cartBadge > 99 ? '99+' : cartBadge}
                   </span>
                 )}
               </Link>

@@ -74,7 +74,7 @@ export default function RootLayout({ children }) {
           {/* Footer renders on every page */}
           <Footer />
           <Toaster
-            position="top-right"
+            position="bottom-right"
             toastOptions={{
               duration: 3000,
               style: {
@@ -84,6 +84,8 @@ export default function RootLayout({ children }) {
                 borderRadius: '12px',
                 fontFamily: 'Poppins, sans-serif',
                 fontSize: '13px',
+                marginBottom: '16px',
+                marginRight: '8px',
               },
               success: {
                 iconTheme: { primary: '#E05C88', secondary: '#FCFAE0' },

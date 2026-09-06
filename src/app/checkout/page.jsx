@@ -274,7 +274,7 @@ export default function CheckoutPage() {
   return (
     <main className="min-h-screen py-10" style={{ background: CREAM }}>
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
-        <h1 className="font-cursive text-4xl font-bold mb-8" style={{ color: BERRY }}>Checkout</h1>
+        <h1 className="font-sans text-3xl font-bold mb-8" style={{ color: BERRY }}>Checkout</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* ── LEFT COLUMN ── */}
@@ -282,7 +282,7 @@ export default function CheckoutPage() {
 
             {/* Address card */}
             <div className="bg-white rounded-[16px] p-6 shadow-card" style={{ border: `1px solid ${BORDER}` }}>
-              <h2 className="font-serif text-xl font-bold flex items-center gap-2 mb-5" style={{ color: BERRY }}>
+              <h2 className="font-sans text-xl font-bold flex items-center gap-2 mb-5" style={{ color: BERRY }}>
                 <MapPin size={18} style={{ color: ROSE }} /> Delivery Address
               </h2>
 
@@ -326,7 +326,7 @@ export default function CheckoutPage() {
 
             {/* Payment method */}
             <div className="bg-white rounded-[16px] p-6 shadow-card" style={{ border: `1px solid ${BORDER}` }}>
-              <h2 className="font-serif text-xl font-bold mb-4" style={{ color: BERRY }}>Payment Method</h2>
+              <h2 className="font-sans text-xl font-bold mb-4" style={{ color: BERRY }}>Payment Method</h2>
 
               <div className="space-y-3">
                 {UPI_OPTIONS.map(({ value, label, Icon }) => (
@@ -372,7 +372,7 @@ export default function CheckoutPage() {
                    style={{ border: `2px solid ${ROSE}` }}>
                 <div className="flex items-center gap-2 mb-4">
                   <Info size={18} style={{ color: ROSE }} />
-                  <h2 className="font-serif text-xl font-bold" style={{ color: BERRY }}>Complete Payment</h2>
+                  <h2 className="font-sans text-xl font-bold" style={{ color: BERRY }}>Complete Payment</h2>
                 </div>
 
                 {/* Amount box */}
@@ -380,7 +380,7 @@ export default function CheckoutPage() {
                   <p className="font-sans text-xs uppercase tracking-wide font-semibold mb-1" style={{ color: PINK }}>
                     Amount to Pay
                   </p>
-                  <p className="font-serif text-3xl font-bold" style={{ color: BERRY }}>
+                  <p className="font-sans text-3xl font-bold" style={{ color: BERRY }}>
                     ₹{finalTotal.toLocaleString()}
                   </p>
                   <p className="font-sans text-xs mt-1" style={{ color: MAUVE }}>
@@ -446,7 +446,7 @@ export default function CheckoutPage() {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-[16px] p-6 shadow-card sticky top-20"
                  style={{ border: `1px solid ${BORDER}` }}>
-              <h2 className="font-serif text-xl font-bold mb-5" style={{ color: BERRY }}>Order Summary</h2>
+              <h2 className="font-sans text-xl font-bold mb-5" style={{ color: BERRY }}>Order Summary</h2>
 
               {/* Item list */}
               <div className="space-y-3 mb-5 max-h-48 overflow-y-auto">
@@ -490,7 +490,7 @@ export default function CheckoutPage() {
                 <hr style={{ borderColor: BORDER }} />
                 <div className="flex justify-between font-bold" style={{ color: BERRY }}>
                   <span>Total</span>
-                  <span className="font-serif text-lg">₹{finalTotal.toLocaleString()}</span>
+                  <span className="font-sans text-lg">₹{finalTotal.toLocaleString()}</span>
                 </div>
               </div>
 

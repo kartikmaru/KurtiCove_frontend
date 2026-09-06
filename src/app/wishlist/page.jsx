@@ -11,7 +11,6 @@ const BERRY    = '#7B2447'
 const MAUVE    = '#6B4553'
 const PINK     = '#F8A5B5'
 const PEACH    = '#FBDBBB'
-const CREAM    = '#FCFAE0'
 const BORDER   = '#F5C8D4'
 const PEACH_LT = '#FEF0E3'
 
@@ -198,7 +197,7 @@ export default function WishlistPage() {
   }, [])
 
   return (
-    <div className="min-h-screen py-10 px-4 md:px-8" style={{ background: CREAM }}>
+    <div className="min-h-screen py-10 px-4 md:px-8 bg-white">
       <div className="max-w-7xl mx-auto">
 
         {/* Breadcrumb */}
