@@ -86,12 +86,22 @@ function ThankYouContent() {
               : 'Your order has been placed. It will be delivered via Cash on Delivery.'}
           </p>
           {isUpi && (
-            <div
-              className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold px-3 py-1.5 rounded-full"
-              style={{ background: MINT, color: BERRY, border: `1px solid #8ED8C3` }}
-            >
-              <BadgeCheck size={13} /> Order Confirmed
-            </div>
+            <>
+              {/* Pending verification notice */}
+              <div className="mt-4 rounded-xl px-4 py-3 text-left"
+                   style={{ background: '#FEF9C3', border: '1px solid #FDE68A' }}>
+                <p className="font-sans text-xs font-semibold text-amber-700 mb-1">Payment Pending Verification</p>
+                <p className="font-sans text-xs text-amber-600 leading-relaxed">
+                  Your order will be confirmed once the UPI payment of{' '}
+                  <strong>₹{searchParams.get('amount') || '—'}</strong> is received and verified.
+                  This usually takes a few minutes.
+                </p>
+              </div>
+              <div className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold px-3 py-1.5 rounded-full"
+                   style={{ background: MINT, color: BERRY, border: `1px solid #8ED8C3` }}>
+                <BadgeCheck size={13} /> Order Placed — Awaiting Payment
+              </div>
+            </>
           )}
         </div>
 

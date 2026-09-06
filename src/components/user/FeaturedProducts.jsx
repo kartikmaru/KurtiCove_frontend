@@ -28,8 +28,8 @@ function ResponsiveSlider({ products }) {
   useEffect(() => {
     const update = () => {
       const mobile = window.innerWidth < 768
-      setPerView(mobile ? 2 : 5)
-      setCardWidth(mobile ? 'calc(50% - 6px)' : 'calc(20% - 10px)')
+      setPerView(mobile ? 2 : 3)
+      setCardWidth(mobile ? 'calc(50% - 6px)' : 'calc(33.333% - 9px)')
     }
     update()
     window.addEventListener('resize', update, { passive: true })
@@ -101,11 +101,10 @@ function FloatDeco({ className, size = 16, Icon = Sparkles, stroke = 1.5 }) {
 
 function SkeletonSlide() {
   return (
-    <div className="relative z-10 flex gap-3">
-      {/* 2 visible on mobile, 5 on desktop — show 5 skeletons, CSS clips on mobile */}
-      {[1, 2, 3, 4, 5].map(i => (
+    <div className="relative z-10 flex gap-3 overflow-hidden">
+      {[1, 2, 3].map(i => (
         <div key={i} className="flex-shrink-0 flex flex-col gap-2 animate-pulse"
-             style={{ width: 'calc(20% - 10px)', minWidth: 'calc(50% - 6px)' }}>
+             style={{ width: 'calc(33.333% - 9px)', minWidth: 'calc(50% - 6px)' }}>
           <div className="aspect-[3/4] rounded-2xl" style={{ background: 'rgba(224,92,136,0.15)' }} />
           <div className="h-4 rounded-full" style={{ background: 'rgba(224,92,136,0.10)' }} />
           <div className="h-3 rounded-full w-2/3" style={{ background: 'rgba(224,92,136,0.08)' }} />
