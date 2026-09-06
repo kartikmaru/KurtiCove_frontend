@@ -371,7 +371,7 @@ function HeaderInner() {
                 style={iconBtnStyle}
               >
                 {wishlist.length > 0
-                  ? <AiFillHeart className="w-[18px] h-[18px] md:w-[21px] md:h-[21px] text-[#FFC9E2]" />
+                  ? <AiFillHeart className="w-[18px] h-[18px] md:w-[21px] md:h-[21px] text-[red]" />
                   : <AiOutlineHeart className="w-[18px] h-[18px] md:w-[21px] md:h-[21px]" />
                 }
                 {wishlist.length > 0 && (
