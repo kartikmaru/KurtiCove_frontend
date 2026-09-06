@@ -3,7 +3,6 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { Sparkles, BadgePercent, Percent, Star, ArrowRight } from 'lucide-react'
 import ProductCard from './ProductCard'
-import { fetchHomeData } from '../../utils/homeDataCache'
 
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/'
 
@@ -16,24 +15,17 @@ function TwoPerViewSlider({ products }) {
   const [activeIdx, setActiveIdx] = useState(0)
   const trackRef = useRef(null)
   const cardRefs = useRef([])
-
   useEffect(() => {
     if (!trackRef.current) return
-    const observers = []
+    const obs = []
     cardRefs.current.forEach((el, i) => {
       if (!el) return
-      const obs = new IntersectionObserver(
-        ([entry]) => { if (entry.isIntersecting) setActiveIdx(i) },
-        { root: trackRef.current, threshold: 0.6 }
-      )
-      obs.observe(el)
-      observers.push(obs)
+      const o = new IntersectionObserver(([e]) => { if (e.isIntersecting) setActiveIdx(i) }, { root: trackRef.current, threshold: 0.6 })
+      o.observe(el); obs.push(o)
     })
-    return () => observers.forEach(o => o.disconnect())
+    return () => obs.forEach(o => o.disconnect())
   }, [products.length])
-
   const scrollTo = i => cardRefs.current[i]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' })
-
   return (
     <div className="relative z-10">
       <div ref={trackRef} className="flex overflow-x-auto snap-x snap-mandatory pb-1"
@@ -80,27 +72,23 @@ function SkeletonSlide() {
 
 export default function OfferSection({ initialData }) {
   const [products, setProducts] = useState(initialData || [])
-  const [loading,  setLoading]  = useState(!initialData)
+  const [loading,  setLoading]  = useState(initialData === null || initialData === undefined)
 
   useEffect(() => {
-    if (initialData) return
-    fetchHomeData()
-      .then(d => { if (d?.deals60) setProducts(d.deals60) })
-      .catch(() =>
-        /* fallback: fetch and filter client-side */
-        fetch(`${BASE}product?limit=100`)
-          .then(r => r.json())
-          .then(d => {
-            if (d.success) {
-              const q = (d.data || [])
-                .filter(p => p.discountPrice && discountPct(p) >= 60)
-                .sort((a, b) => discountPct(b) - discountPct(a))
-                .slice(0, 4)
-              setProducts(q)
-            }
-          })
-          .catch(() => {})
-      )
+    if (initialData && initialData.length > 0) { setLoading(false); return }
+    /* Fallback: fetch and filter client-side */
+    fetch(`${BASE}product?limit=100`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.success && d.data?.length) {
+          const q = d.data
+            .filter(p => p.discountPrice && discountPct(p) >= 60)
+            .sort((a, b) => discountPct(b) - discountPct(a))
+            .slice(0, 4)
+          if (q.length) setProducts(q)
+        }
+      })
+      .catch(() => {})
       .finally(() => setLoading(false))
   }, [initialData])
 
@@ -130,16 +118,12 @@ export default function OfferSection({ initialData }) {
                 <span className="font-sans text-xs font-bold tracking-[0.2em] uppercase text-white">Exclusive Deal</span>
               </div>
               <div className="mb-2 leading-none">
-                <p className="font-serif text-white leading-none"
-                   style={{ fontFamily: 'var(--font-playfair),serif', fontSize: 'clamp(2.5rem,5vw,4rem)', fontWeight: 800 }}>Up to</p>
-                <p className="font-serif leading-none"
-                   style={{ fontFamily: 'var(--font-playfair),serif', fontSize: 'clamp(3.5rem,8vw,6.5rem)', fontWeight: 900,
-                     background: 'linear-gradient(90deg,#ffffff,#FCFAE0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                <p className="font-serif text-white leading-none" style={{ fontFamily: 'var(--font-playfair),serif', fontSize: 'clamp(2.5rem,5vw,4rem)', fontWeight: 800 }}>Up to</p>
+                <p className="font-serif leading-none" style={{ fontFamily: 'var(--font-playfair),serif', fontSize: 'clamp(3.5rem,8vw,6.5rem)', fontWeight: 900, background: 'linear-gradient(90deg,#ffffff,#FCFAE0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
                   {maxPct}% OFF
                 </p>
               </div>
-              <p className="font-serif italic mb-1 text-white/90"
-                 style={{ fontFamily: 'var(--font-playfair),serif', fontSize: 'clamp(1rem,2vw,1.35rem)' }}>on selected styles</p>
+              <p className="font-serif italic mb-1 text-white/90" style={{ fontFamily: 'var(--font-playfair),serif', fontSize: 'clamp(1rem,2vw,1.35rem)' }}>on selected styles</p>
               <p className="font-sans text-xs mb-6" style={{ color: 'rgba(255,255,255,0.55)' }}>* Limited time offer. While stocks last.</p>
               <Link href="/shop"
                 className="inline-flex items-center gap-2 font-sans font-bold text-sm px-7 py-3 rounded-full shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
@@ -161,8 +145,7 @@ export default function OfferSection({ initialData }) {
               <FloatDeco Icon={Sparkles} size={13} className="top-3 left-1/2"  style={{ color: '#F8A5B5' }} />
               <div className="relative z-10 mb-4">
                 <p className="font-sans text-[10px] font-semibold tracking-[0.25em] uppercase mb-1" style={{ color: '#6B4553' }}>Handpicked Deals</p>
-                <h3 className="font-serif text-xl md:text-2xl font-bold leading-tight"
-                    style={{ fontFamily: 'var(--font-playfair),serif', color: '#7B2447' }}>
+                <h3 className="font-serif text-xl md:text-2xl font-bold leading-tight" style={{ fontFamily: 'var(--font-playfair),serif', color: '#7B2447' }}>
                   Big Discounts,<br className="hidden md:block" /> Bigger Style
                 </h3>
               </div>

@@ -4,11 +4,10 @@ import ProductCard from './ProductCard'
 
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/'
 
-/* ── Skeleton card ── */
-function SkeletonCard() {
+function SkeletonCard({ width }) {
   return (
     <div className="rounded-2xl overflow-hidden animate-pulse border flex-shrink-0"
-         style={{ borderColor: '#F0E8EC', width: 'calc(50% - 6px)' }}>
+         style={{ borderColor: '#F0E8EC', width }}>
       <div className="aspect-[3/4] bg-gray-100" />
       <div className="p-3.5 space-y-2">
         <div className="h-4 rounded-full w-4/5 bg-gray-100" />
@@ -21,21 +20,36 @@ function SkeletonCard() {
 }
 
 /*
-  2-PER-VIEW SNAP SLIDER
+  RESPONSIVE SLIDER
   ─────────────────────────────────────────────────────────────
-  • Each card is (50% - gap/2) wide so exactly 2 fit edge-to-edge
-  • scroll-snap-type: x mandatory, each card is a snap point
-  • IntersectionObserver tracks which card is visually leftmost
-    to sync the dot indicator (threshold 0.6)
-  • No library — native scroll + CSS snap only
-  • Pagination dots below, rose for active
-  ─────────────────────────────────────────────────────────────
-*/
-function TwoPerViewSlider({ products }) {
+  Mobile (<768px)  → 2 cards per view  (calc(50% - 6px))
+  Desktop (≥768px) → 5 cards per view  (calc(20% - 10px))
+
+  Both use scroll-snap + IntersectionObserver for synced dots.
+  Card width is set via a CSS custom property --card-w injected
+  once on mount and updated on resize.
+─────────────────────────────────────────────────────────────*/
+function ResponsiveSlider({ products }) {
   const [activeIdx, setActiveIdx] = useState(0)
+  const [cardWidth, setCardWidth] = useState('calc(50% - 6px)')
+  const [perView,   setPerView]   = useState(2)
   const trackRef  = useRef(null)
   const cardRefs  = useRef([])
+  const wrapRef   = useRef(null)
 
+  /* Recalculate card width on mount and on resize */
+  useEffect(() => {
+    const update = () => {
+      const mobile = window.innerWidth < 768
+      setPerView(mobile ? 2 : 5)
+      setCardWidth(mobile ? 'calc(50% - 6px)' : 'calc(20% - 10px)')
+    }
+    update()
+    window.addEventListener('resize', update, { passive: true })
+    return () => window.removeEventListener('resize', update)
+  }, [])
+
+  /* IntersectionObserver — update active dot */
   useEffect(() => {
     if (!trackRef.current) return
     const observers = []
@@ -43,51 +57,48 @@ function TwoPerViewSlider({ products }) {
       if (!el) return
       const obs = new IntersectionObserver(
         ([entry]) => { if (entry.isIntersecting) setActiveIdx(i) },
-        { root: trackRef.current, threshold: 0.6 }
+        { root: trackRef.current, threshold: 0.55 }
       )
       obs.observe(el)
       observers.push(obs)
     })
-    return () => observers.forEach((o) => o.disconnect())
-  }, [products.length])
+    return () => observers.forEach(o => o.disconnect())
+  }, [products.length, perView])
 
-  /* Scroll a specific card into view */
-  const scrollTo = (i) => {
+  const scrollTo = i => {
     cardRefs.current[i]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' })
   }
 
-  /* Dot count = number of "pages" where each page advances by 1 card */
+  /*
+    Dot count: number of distinct "page positions".
+    For 2-per-view on 8 items → 8 dots (scrolls 1 card at a time).
+    For 5-per-view on 8 items → show every item's dot (user can snap to any).
+  */
   const dotCount = products.length
 
   return (
-    <div>
-      {/* Scroll track */}
+    <div ref={wrapRef}>
+      {/* Track */}
       <div
         ref={trackRef}
         className="flex overflow-x-auto snap-x snap-mandatory pb-1"
-        style={{
-          gap: '12px',
-          scrollbarWidth: 'none',
-          WebkitOverflowScrolling: 'touch',
-          /* hide webkit scrollbar */
-        }}
+        style={{ gap: '12px', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
       >
-        <style>{`.similar-track::-webkit-scrollbar{display:none}`}</style>
+        <style>{`.sim-track::-webkit-scrollbar{display:none}`}</style>
         {products.map((p, i) => (
           <div
             key={p._id}
-            ref={(el) => { cardRefs.current[i] = el }}
-            className="flex-shrink-0 snap-start"
-            /* Each card is 50% of container minus half the gap (6px) */
-            style={{ width: 'calc(50% - 6px)' }}
+            ref={el => { cardRefs.current[i] = el }}
+            className="flex-shrink-0 snap-start sim-track"
+            style={{ width: cardWidth, transition: 'width 0.2s' }}
           >
             <ProductCard product={p} />
           </div>
         ))}
       </div>
 
-      {/* Pagination dots */}
-      {dotCount > 1 && (
+      {/* Dots */}
+      {dotCount > perView && (
         <div className="flex justify-center gap-2 mt-4" aria-label="Similar products navigation">
           {Array.from({ length: dotCount }).map((_, i) => (
             <button
@@ -127,29 +138,23 @@ export default function SimilarProducts({ productId }) {
   return (
     <section className="mt-14 pt-10 border-t" style={{ borderColor: '#F5C8D4' }}>
       <div className="mb-6">
-        <span className="text-xs font-bold tracking-[0.3em] uppercase font-sans block mb-2"
-              style={{ color: '#E05C88' }}>
+        <span className="text-xs font-bold tracking-[0.3em] uppercase font-sans block mb-2" style={{ color: '#E05C88' }}>
           YOU MAY ALSO LIKE
         </span>
-        <h2 className="text-2xl md:text-3xl font-bold leading-tight"
-            style={{ fontFamily: 'var(--font-playfair), serif', color: '#7B2447' }}>
+        <h2 className="text-2xl md:text-3xl font-bold leading-tight" style={{ fontFamily: 'var(--font-playfair), serif', color: '#7B2447' }}>
           Similar Products
         </h2>
       </div>
 
       {loading ? (
-        /* Skeleton — 2 per row matching the slider */
+        /* Skeleton — matches the responsive card width pattern */
         <div className="flex gap-3 overflow-x-hidden">
-          {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
+          {Array.from({ length: 5 }).map((_, i) => (
+            <SkeletonCard key={i} width="calc(20% - 10px)" />
+          ))}
         </div>
       ) : (
-        /*
-          Single layout for both mobile and desktop:
-          2-per-view snap slider.
-          On wider screens the cards are simply wider (50% of a
-          wider container = large comfortable cards).
-        */
-        <TwoPerViewSlider products={products} />
+        <ResponsiveSlider products={products} />
       )}
     </section>
   )

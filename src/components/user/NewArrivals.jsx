@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { FiArrowRight } from 'react-icons/fi'
 import ProductCard from './ProductCard'
-import { fetchHomeData } from '../../utils/homeDataCache'
+import { markDataReady } from './Preloader'
 
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/'
 
@@ -25,22 +25,19 @@ function MobileSlider({ products }) {
   const [activeIdx, setActiveIdx] = useState(0)
   const trackRef = useRef(null)
   const cardRefs = useRef([])
-
   useEffect(() => {
     if (!trackRef.current) return
-    const observers = []
+    const obs = []
     cardRefs.current.forEach((el, i) => {
       if (!el) return
-      const obs = new IntersectionObserver(
-        ([entry]) => { if (entry.isIntersecting) setActiveIdx(i) },
+      const o = new IntersectionObserver(
+        ([e]) => { if (e.isIntersecting) setActiveIdx(i) },
         { root: trackRef.current, threshold: 0.6 }
       )
-      obs.observe(el)
-      observers.push(obs)
+      o.observe(el); obs.push(o)
     })
-    return () => observers.forEach(o => o.disconnect())
+    return () => obs.forEach(o => o.disconnect())
   }, [products.length])
-
   return (
     <div>
       <div ref={trackRef} className="flex overflow-x-auto snap-x snap-mandatory gap-3 pb-2"
@@ -66,19 +63,24 @@ function MobileSlider({ products }) {
 
 export default function NewArrivals({ initialData }) {
   const [products, setProducts] = useState(initialData || [])
-  const [loading,  setLoading]  = useState(!initialData)
+  const [loading,  setLoading]  = useState(initialData === null || initialData === undefined)
 
   useEffect(() => {
-    if (initialData) return   // already have data from parent
-    fetchHomeData()
-      .then(d => { if (d?.newArrivals) setProducts(d.newArrivals) })
-      .catch(() =>
-        /* fallback to individual call */
-        fetch(`${BASE}product?isNewArrival=true&limit=8`)
-          .then(r => r.json()).then(d => { if (d.success) setProducts(d.data || []) })
-          .catch(() => {})
-      )
-      .finally(() => setLoading(false))
+    // If server already gave us real data, use it immediately
+    if (initialData && initialData.length > 0) {
+      setLoading(false)
+      markDataReady()   // first section loaded — unblock preloader
+      return
+    }
+    // Otherwise fetch individually (guaranteed fallback)
+    fetch(`${BASE}product?isNewArrival=true&limit=8`)
+      .then(r => r.json())
+      .then(d => { if (d.success && d.data?.length) setProducts(d.data) })
+      .catch(() => {})
+      .finally(() => {
+        setLoading(false)
+        markDataReady()  // signal regardless of success/fail so preloader never hangs
+      })
   }, [initialData])
 
   return (
@@ -96,7 +98,6 @@ export default function NewArrivals({ initialData }) {
           </Link>
         </div>
         <div className="w-16 h-0.5 rounded-full mb-8" style={{ background: 'linear-gradient(to right,#E05C88,#F8A5B5)' }} />
-
         {loading ? (
           <>
             <div className="md:hidden grid grid-cols-2 gap-3">{Array.from({length:2}).map((_,i)=><SkeletonCard key={i}/>)}</div>

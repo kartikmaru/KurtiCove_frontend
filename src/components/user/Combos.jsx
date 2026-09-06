@@ -3,7 +3,6 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { FiArrowRight } from 'react-icons/fi'
 import ProductCard from './ProductCard'
-import { fetchHomeData } from '../../utils/homeDataCache'
 
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/'
 
@@ -25,37 +24,28 @@ function MobileSlider({ products }) {
   const [activeIdx, setActiveIdx] = useState(0)
   const trackRef = useRef(null)
   const cardRefs = useRef([])
-
   useEffect(() => {
     if (!trackRef.current) return
-    const observers = []
+    const obs = []
     cardRefs.current.forEach((el, i) => {
       if (!el) return
-      const obs = new IntersectionObserver(
-        ([entry]) => { if (entry.isIntersecting) setActiveIdx(i) },
-        { root: trackRef.current, threshold: 0.6 }
-      )
-      obs.observe(el)
-      observers.push(obs)
+      const o = new IntersectionObserver(([e]) => { if (e.isIntersecting) setActiveIdx(i) }, { root: trackRef.current, threshold: 0.6 })
+      o.observe(el); obs.push(o)
     })
-    return () => observers.forEach(o => o.disconnect())
+    return () => obs.forEach(o => o.disconnect())
   }, [products.length])
-
   return (
     <div>
-      <div ref={trackRef} className="flex overflow-x-auto snap-x snap-mandatory gap-3 pb-2"
-           style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+      <div ref={trackRef} className="flex overflow-x-auto snap-x snap-mandatory gap-3 pb-2" style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
         {products.map((p, i) => (
-          <div key={p._id} ref={el => { cardRefs.current[i] = el }}
-               className="flex-shrink-0 snap-center" style={{ width: 'calc(50% - 6px)' }}>
+          <div key={p._id} ref={el => { cardRefs.current[i] = el }} className="flex-shrink-0 snap-center" style={{ width: 'calc(50% - 6px)' }}>
             <ProductCard product={p} />
           </div>
         ))}
       </div>
       <div className="flex justify-center gap-2 mt-4">
         {products.map((_, i) => (
-          <button key={i}
-            onClick={() => cardRefs.current[i]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })}
+          <button key={i} onClick={() => cardRefs.current[i]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })}
             className="rounded-full transition-all duration-300"
             style={{ width: i === activeIdx ? 24 : 10, height: 10, background: i === activeIdx ? '#B5EDDB' : '#F8A5B5' }}
             aria-label={`Go to combo ${i + 1}`} />
@@ -67,17 +57,14 @@ function MobileSlider({ products }) {
 
 export default function Combos({ initialData }) {
   const [products, setProducts] = useState(initialData || [])
-  const [loading,  setLoading]  = useState(!initialData)
+  const [loading,  setLoading]  = useState(initialData === null || initialData === undefined)
 
   useEffect(() => {
-    if (initialData) return
-    fetchHomeData()
-      .then(d => { if (d?.combos) setProducts(d.combos) })
-      .catch(() =>
-        fetch(`${BASE}product?category=combo&limit=8`)
-          .then(r => r.json()).then(d => { if (d.success) setProducts(d.data || []) })
-          .catch(() => {})
-      )
+    if (initialData && initialData.length > 0) { setLoading(false); return }
+    fetch(`${BASE}product?category=combo&limit=8`)
+      .then(r => r.json())
+      .then(d => { if (d.success && d.data?.length) setProducts(d.data) })
+      .catch(() => {})
       .finally(() => setLoading(false))
   }, [initialData])
 
@@ -98,7 +85,6 @@ export default function Combos({ initialData }) {
           </Link>
         </div>
         <div className="w-16 h-0.5 rounded-full mb-8" style={{ background: 'linear-gradient(to right,#B5EDDB,#E05C88)' }} />
-
         {loading ? (
           <>
             <div className="md:hidden grid grid-cols-2 gap-3">{Array.from({length:2}).map((_,i)=><SkeletonCard key={i}/>)}</div>

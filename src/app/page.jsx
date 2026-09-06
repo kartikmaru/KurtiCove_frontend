@@ -1,13 +1,9 @@
 /*
-  Home page — server component that pre-fetches the aggregated /api/home
-  endpoint at request time so the client receives all section data in the
-  HTML, making the page instantly usable without waiting for client-side
-  fetches on every section.
+  Home page — server component.
 
-  Each section component also accepts `initialData` — if provided it
-  skips its own fetch entirely.  If the pre-fetch fails (cold start,
-  network issue) the sections fall back to their own individual calls
-  transparently.
+  IMPORTANT: uses process.env.API_BASE_URL (server-side, no NEXT_PUBLIC prefix)
+  so the server-side fetch works on Vercel. Falls back to NEXT_PUBLIC_API_BASE_URL
+  then localhost for local dev.
 */
 import HeroBanner    from '../components/user/HeroBanner'
 import NewArrivals   from '../components/user/NewArrivals'
@@ -22,18 +18,31 @@ export const metadata = {
   description: 'Shop the finest kurtis — new arrivals, bestsellers, and festive collections.',
 }
 
-const BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/'
+/*
+  Server-side base URL: prefer the private server env var (no NEXT_PUBLIC_),
+  fall back to the public one, then localhost for dev.
+*/
+const SERVER_BASE =
+  process.env.API_BASE_URL ||
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  'http://localhost:5000/api/'
 
 async function getHomeData() {
   try {
-    const res = await fetch(`${BASE}home`, {
-      next: { revalidate: 90 },   // ISR: revalidate every 90s
+    const url = SERVER_BASE.endsWith('/') ? `${SERVER_BASE}home` : `${SERVER_BASE}/home`
+    const res = await fetch(url, {
+      next: { revalidate: 90 },
+      headers: { Accept: 'application/json' },
     })
     if (!res.ok) return null
     const json = await res.json()
-    return json.success ? json.data : null
+    if (!json.success || !json.data) return null
+    // Only return non-empty data to avoid caching empty states
+    const d = json.data
+    if (!d.newArrivals?.length && !d.bestSellers?.length) return null
+    return d
   } catch {
-    return null   // sections will self-fetch client-side
+    return null
   }
 }
 
@@ -42,15 +51,17 @@ export default async function HomePage() {
 
   return (
     <div className="bg-white">
-      {/* Hero — no data dependency */}
       <HeroBanner />
-
-      {/* Sections receive pre-fetched data; fall back gracefully if null */}
-      <NewArrivals  initialData={home?.newArrivals  ?? null} />
+      {/*
+        Pass initialData only when we have real data.
+        null means "please fetch yourself" — never pass empty arrays
+        as that silently suppresses the client-side fetch.
+      */}
+      <NewArrivals  initialData={home?.newArrivals?.length  ? home.newArrivals  : null} />
       <FestivalSale />
-      <BestSellers  initialData={home?.bestSellers  ?? null} />
-      <Combos       initialData={home?.combos       ?? null} />
-      <OfferSection initialData={home?.deals60      ?? null} />
+      <BestSellers  initialData={home?.bestSellers?.length  ? home.bestSellers  : null} />
+      <Combos       initialData={home?.combos?.length       ? home.combos       : null} />
+      <OfferSection initialData={home?.deals60?.length      ? home.deals60      : null} />
       <NewsletterBanner />
     </div>
   )
