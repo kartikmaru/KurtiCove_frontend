@@ -1,68 +1,55 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { FiChevronLeft, FiChevronRight } from 'react-icons/fi'
+import Link from 'next/link'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 /*
-  Desktop banners: standardised 1717×916 (ratio ≈1.874:1).
-  Mobile banners: portrait images in /for mobile hero/ folder.
+  All banner images are standardised to 1717×916 (ratio ≈1.874:1).
+  Same desktop images used on mobile — they scale down proportionally
+  with the container maintaining the same aspect-ratio, so nothing is
+  ever cropped on any screen size.
 
-  FIX for mobile invisible slider:
-  ─────────────────────────────────────────────────────────────
-  Root cause: isMobile started as `false` (SSR default), so the
-  container always received aspectRatio:'1717/916' on first paint.
-  On a 375px screen that is only ~200px tall and the absolute-
-  positioned slides filled that thin strip — images appeared
-  invisible or clipped.
+  Hero offset: the section no longer uses a negative margin. Instead
+  the Header's own spacer div (h-14 md:h-20) pushes the content below
+  the fixed bar, and this section starts flush below that spacer. This
+  guarantees the hero artwork is NEVER hidden behind the header in
+  either the flat or pill state.
+*/
 
-  Fix:
-  • isMobile starts as `null` (unknown).
-  • Container uses CSS media queries (not inline JS) for sizing:
-    - Mobile: min-height:56vw so something is always visible before JS
-    - Desktop md+: aspect-ratio:1717/916
-  • After hydration, the JS isMobile state selects the correct slide
-    set (mobile images vs desktop images) and removes the min-height.
-─────────────────────────────────────────────────────────────*/
-
-const DESKTOP_SLIDES = [
-  { src: '/hero/image1.png', alt: 'Kurti Cove Collection 1' },
-  { src: '/hero/image2.png', alt: 'Kurti Cove Collection 2' },
-  { src: '/hero/image3.png', alt: 'Kurti Cove Collection 3' },
-  { src: '/hero/image4.jpg', alt: 'Kurti Cove Collection 4' },
-]
-
-const MOBILE_SLIDES = [
-  { src: '/for%20mobile%20hero/34c535f4-1e26-436c-af3b-2f5985c86a77.png',      alt: 'Kurti Cove Mobile 1' },
-  { src: '/for%20mobile%20hero/image1ba5eea5e-70c3-4509-a37a-9578cd09125d.png', alt: 'Kurti Cove Mobile 2' },
-  { src: '/for%20mobile%20hero/image2.png',                                       alt: 'Kurti Cove Mobile 3' },
-  { src: '/for%20mobile%20hero/image3.png',                                       alt: 'Kurti Cove Mobile 4' },
+const SLIDES = [
+  {
+    src:  '/hero/image1.png',
+    alt:  'Kurti Cove Collection 1',
+    href: '/shop',
+    cta:  'Shop Now',
+  },
+  {
+    src:  '/hero/image2.png',
+    alt:  'Kurti Cove Collection 2',
+    href: '/shop?filter=isNewArrival',
+    cta:  'New Arrivals',
+  },
+  {
+    src:  '/hero/image3.png',
+    alt:  'Kurti Cove Collection 3',
+    href: '/shop?filter=isBestSeller',
+    cta:  'Best Sellers',
+  },
+  {
+    src:  '/hero/image4.png',   /* fixed: was image4.jpg — file is .png */
+    alt:  'Kurti Cove Collection 4',
+    href: '/shop?sort=desc',
+    cta:  'Shop Deals',
+  },
 ]
 
 const INTERVAL_MS = 3500
 
 export default function HeroBanner() {
-  const [current,  setCurrent]  = useState(0)
-  /* null = not yet detected (avoids SSR mismatch) */
-  const [isMobile, setIsMobile] = useState(null)
+  const [current, setCurrent] = useState(0)
   const intervalRef = useRef(null)
+  const total = SLIDES.length
 
-  /* Detect after mount — never runs on server */
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768)
-    check()
-    window.addEventListener('resize', check, { passive: true })
-    return () => window.removeEventListener('resize', check)
-  }, [])
-
-  /*
-    While isMobile is null (SSR / first paint), default to desktop slides
-    so the component renders something on both server and client.
-    The CSS media query ensures the container is tall enough on mobile
-    even before JS detects the screen size.
-  */
-  const slides = isMobile === true ? MOBILE_SLIDES : DESKTOP_SLIDES
-  const total  = slides.length
-
-  /* Auto-slide */
   const startTimer = useCallback(() => {
     clearInterval(intervalRef.current)
     intervalRef.current = setInterval(() => setCurrent(c => (c + 1) % total), INTERVAL_MS)
@@ -93,40 +80,78 @@ export default function HeroBanner() {
         .marquee-track { animation: marquee 30s linear infinite; }
         .marquee-track:hover { animation-play-state: paused; }
 
-        /* ── Hero container sizing ── */
+        /*
+          Hero container:
+          - Uses the 1717/916 aspect-ratio on all screen sizes so the image
+            always scales proportionally — no cropping ever.
+          - No negative margin: the header spacer div handles the offset.
+        */
         .hero-slider-container {
-          /* Mobile-first: portrait-friendly minimum height */
-          min-height: 56vw;
-          aspect-ratio: auto;
+          position: relative;
+          width: 100%;
+          overflow: hidden;
+          aspect-ratio: 1717 / 916;
         }
-        @media (min-width: 768px) {
-          .hero-slider-container {
-            min-height: unset;
-            aspect-ratio: 1717 / 916;
+
+        /* Arrow buttons — glassy style */
+        .hero-arrow {
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          z-index: 20;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          cursor: pointer;
+          transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          background: rgba(255,255,255,0.75);
+          border: 1.5px solid rgba(123,36,71,0.22);
+          box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+          color: #7B2447;
+          /* Desktop size */
+          width: 44px;
+          height: 44px;
+        }
+        .hero-arrow:hover {
+          background: rgba(255,255,255,0.92);
+          box-shadow: 0 4px 18px rgba(224,92,136,0.30);
+          transform: translateY(-50%) scale(1.08);
+          color: #E05C88;
+        }
+        /* Mobile: slightly smaller */
+        @media (max-width: 767px) {
+          .hero-arrow {
+            width: 34px;
+            height: 34px;
           }
         }
       `}</style>
 
-      <section className="-mt-14 md:-mt-20 w-full relative" aria-label="Hero image slider">
-        {/*
-          .hero-slider-container:
-          Mobile  → aspect-ratio:auto, min-height:56vw (ensures visible height
-                    for portrait images before JS fires)
-          Desktop → aspect-ratio:1717/916, min-height:unset
-        */}
-        <div className="hero-slider-container relative w-full overflow-hidden">
+      {/*
+        NO negative margin here. The Header component renders its own
+        spacer div (h-14 md:h-20) which pushes all page content below
+        the fixed bar. The hero starts naturally after that spacer.
+      */}
+      <section className="w-full relative" aria-label="Hero image slider">
+        <div className="hero-slider-container">
 
           {/* ── SLIDES ── */}
-          {slides.map((slide, idx) => {
+          {SLIDES.map((slide, idx) => {
             const active = idx === current
             return (
-              <div
+              /* Entire slide is a link */
+              <Link
                 key={slide.src}
-                className="absolute inset-0 transition-opacity duration-700 ease-in-out"
+                href={slide.href}
+                className="absolute inset-0 transition-opacity duration-700 ease-in-out block"
                 style={{ opacity: active ? 1 : 0, zIndex: active ? 1 : 0 }}
                 aria-hidden={!active}
+                tabIndex={active ? 0 : -1}
               >
-                {/* Layer 1 — ambient blur fill */}
+                {/* Layer 1 — ambient blur fill (letterbox filler) */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={slide.src} alt="" aria-hidden="true"
@@ -138,6 +163,7 @@ export default function HeroBanner() {
                   }}
                   draggable={false}
                   loading={idx === 0 ? 'eager' : 'lazy'}
+                  fetchPriority={idx === 0 ? 'high' : 'auto'}
                 />
 
                 {/* Layer 2 — foreground, never cropped */}
@@ -148,36 +174,43 @@ export default function HeroBanner() {
                   style={{ objectFit: 'contain', objectPosition: 'center' }}
                   draggable={false}
                   loading={idx === 0 ? 'eager' : 'lazy'}
+                  fetchPriority={idx === 0 ? 'high' : 'auto'}
                 />
-              </div>
+
+                {/* CTA pill button — deep rose, themed */}
+                <div className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 z-10">
+                  <span className="inline-flex items-center px-5 py-2 sm:px-7 sm:py-2.5 rounded-full text-white font-sans font-semibold text-xs sm:text-sm shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl"
+                        style={{ background: '#E05C88' }}>
+                    {slide.cta}
+                  </span>
+                </div>
+              </Link>
             )
           })}
 
           {/* Bottom gradient */}
           <div className="absolute bottom-0 left-0 right-0 h-14 pointer-events-none z-10"
-               style={{ background: 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.14))' }} />
+               style={{ background: 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.12))' }} />
 
-          {/* Left arrow — desktop only */}
-          <button onClick={goPrev} aria-label="Previous slide"
-            className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/80 hover:bg-white items-center justify-center shadow-md transition-all duration-200 hover:scale-105"
-            style={{ color: '#7B2447' }}>
-            <FiChevronLeft size={20} />
+          {/* Left arrow */}
+          <button onClick={(e) => { e.preventDefault(); goPrev() }} aria-label="Previous slide"
+            className="hero-arrow" style={{ left: '12px' }}>
+            <ChevronLeft size={20} strokeWidth={2} />
           </button>
 
-          {/* Right arrow — desktop only */}
-          <button onClick={goNext} aria-label="Next slide"
-            className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/80 hover:bg-white items-center justify-center shadow-md transition-all duration-200 hover:scale-105"
-            style={{ color: '#7B2447' }}>
-            <FiChevronRight size={20} />
+          {/* Right arrow */}
+          <button onClick={(e) => { e.preventDefault(); goNext() }} aria-label="Next slide"
+            className="hero-arrow" style={{ right: '12px' }}>
+            <ChevronRight size={20} strokeWidth={2} />
           </button>
 
           {/* Dots */}
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 sm:gap-2"
                role="tablist" aria-label="Slide indicators">
-            {slides.map((_, idx) => (
+            {SLIDES.map((_, idx) => (
               <button
                 key={idx}
-                onClick={() => goTo(idx)}
+                onClick={(e) => { e.preventDefault(); goTo(idx) }}
                 role="tab"
                 aria-selected={idx === current}
                 aria-label={`Go to slide ${idx + 1}`}
@@ -190,34 +223,37 @@ export default function HeroBanner() {
               />
             ))}
           </div>
-        </div>{/* end hero-slider-container */}
+        </div>
       </section>
 
-      {/* Marquee strip */}
-      <div className="w-full py-3 overflow-hidden relative"
+      {/* ── Marquee strip ── */}
+      <div className="w-full overflow-hidden relative"
            style={{ background: 'linear-gradient(90deg,#E05C88 0%,#F8A5B5 50%,#E05C88 100%)' }}>
-        <div className="marquee-track flex whitespace-nowrap">
-          {[0, 1].map((repeat) => (
-            <span key={repeat} className="flex items-center flex-shrink-0">
-              {[
-                'Free Shipping on Orders Above ₹999',
-                'Cash on Delivery Available',
-                '15-Day Easy Returns',
-                '500+ Kurti Styles',
-                'Authentic Indian Ethnic Wear',
-                'Handcrafted with Love',
-                'New Arrivals Every Week',
-                'Secure & Encrypted Checkout',
-              ].map((text, i) => (
-                <span key={`${repeat}-${i}`}
-                      className="inline-flex items-center gap-2 px-8 text-sm font-sans font-medium"
-                      style={{ color: '#FDF3F4' }}>
-                  <span style={{ color: 'rgba(253,243,244,0.50)', fontSize: '10px' }}>✦</span>
-                  {text}
-                </span>
-              ))}
-            </span>
-          ))}
+        {/* Mobile: slim 28px, Desktop: 44px */}
+        <div className="py-1.5 sm:py-3">
+          <div className="marquee-track flex whitespace-nowrap">
+            {[0, 1].map((repeat) => (
+              <span key={repeat} className="flex items-center flex-shrink-0">
+                {[
+                  'Free Shipping on Orders Above ₹999',
+                  'Cash on Delivery Available',
+                  '15-Day Easy Returns',
+                  '500+ Kurti Styles',
+                  'Authentic Indian Ethnic Wear',
+                  'Handcrafted with Love',
+                  'New Arrivals Every Week',
+                  'Secure & Encrypted Checkout',
+                ].map((text, i) => (
+                  <span key={`${repeat}-${i}`}
+                        className="inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-8 text-[11px] sm:text-sm font-sans font-medium"
+                        style={{ color: '#FDF3F4' }}>
+                    <span style={{ color: 'rgba(253,243,244,0.50)', fontSize: '8px' }}>✦</span>
+                    {text}
+                  </span>
+                ))}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
     </>

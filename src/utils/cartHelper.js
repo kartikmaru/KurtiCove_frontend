@@ -1,4 +1,5 @@
 import API from './Helper'
+import toast from 'react-hot-toast'
 import { loadUserCart, addtocart, removeItem as removeItemAction } from '../redux/features/CartSlice'
 
 /**
@@ -39,6 +40,12 @@ export const addToCartWithSync = async (product, qty = 1, dispatch) => {
       images: product.images || [],
       qty,
     })
+  )
+
+  // Success toast — themed, bottom-right per global Toaster config
+  toast.success(
+    `${product.name.length > 30 ? product.name.slice(0, 30) + '…' : product.name} added to cart`,
+    { duration: 2200 }
   )
 
   // If logged in, sync with server
