@@ -11,39 +11,83 @@ function discountPct(p) {
   return Math.round(((p.price - p.discountPrice) / p.price) * 100)
 }
 
-function TwoPerViewSlider({ products }) {
+/*
+  RESPONSIVE SLIDER
+  ─────────────────────────────────────────────────────────────
+  Mobile (<768px)  → 2 cards per view  calc(50% - 6px)
+  Desktop (≥768px) → 5 cards per view  calc(20% - 10px)
+  Same scroll-snap pattern used across Similar Products.
+─────────────────────────────────────────────────────────────*/
+function ResponsiveSlider({ products }) {
   const [activeIdx, setActiveIdx] = useState(0)
+  const [cardWidth, setCardWidth] = useState('calc(50% - 6px)')
+  const [perView,   setPerView]   = useState(2)
   const trackRef = useRef(null)
   const cardRefs = useRef([])
+
+  useEffect(() => {
+    const update = () => {
+      const mobile = window.innerWidth < 768
+      setPerView(mobile ? 2 : 5)
+      setCardWidth(mobile ? 'calc(50% - 6px)' : 'calc(20% - 10px)')
+    }
+    update()
+    window.addEventListener('resize', update, { passive: true })
+    return () => window.removeEventListener('resize', update)
+  }, [])
+
   useEffect(() => {
     if (!trackRef.current) return
     const obs = []
     cardRefs.current.forEach((el, i) => {
       if (!el) return
-      const o = new IntersectionObserver(([e]) => { if (e.isIntersecting) setActiveIdx(i) }, { root: trackRef.current, threshold: 0.6 })
+      const o = new IntersectionObserver(
+        ([e]) => { if (e.isIntersecting) setActiveIdx(i) },
+        { root: trackRef.current, threshold: 0.55 }
+      )
       o.observe(el); obs.push(o)
     })
     return () => obs.forEach(o => o.disconnect())
-  }, [products.length])
+  }, [products.length, perView])
+
   const scrollTo = i => cardRefs.current[i]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' })
+
   return (
     <div className="relative z-10">
-      <div ref={trackRef} className="flex overflow-x-auto snap-x snap-mandatory pb-1"
-           style={{ gap: '12px', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+      <div
+        ref={trackRef}
+        className="flex overflow-x-auto snap-x snap-mandatory pb-1"
+        style={{ gap: '12px', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
+      >
         <style>{`.deals-track::-webkit-scrollbar{display:none}`}</style>
         {products.map((p, i) => (
-          <div key={p._id} ref={el => { cardRefs.current[i] = el }}
-               className="flex-shrink-0 snap-start deals-track" style={{ width: 'calc(50% - 6px)' }}>
+          <div
+            key={p._id}
+            ref={el => { cardRefs.current[i] = el }}
+            className="flex-shrink-0 snap-start deals-track"
+            style={{ width: cardWidth, transition: 'width 0.15s' }}
+          >
             <ProductCard product={p} />
           </div>
         ))}
       </div>
-      {products.length > 1 && (
+
+      {/* Dots — only show when more cards exist than are visible */}
+      {products.length > perView && (
         <div className="flex justify-center gap-2 mt-4">
           {products.map((_, i) => (
-            <button key={i} onClick={() => scrollTo(i)} className="rounded-full transition-all duration-300"
-              style={{ width: i === activeIdx ? 22 : 8, height: 8, background: i === activeIdx ? '#E05C88' : 'rgba(255,255,255,0.5)', flexShrink: 0 }}
-              aria-label={`Go to deal ${i + 1}`} />
+            <button
+              key={i}
+              onClick={() => scrollTo(i)}
+              className="rounded-full transition-all duration-300"
+              style={{
+                width:      i === activeIdx ? 22 : 8,
+                height:     8,
+                background: i === activeIdx ? '#E05C88' : 'rgba(255,255,255,0.5)',
+                flexShrink: 0,
+              }}
+              aria-label={`Go to deal ${i + 1}`}
+            />
           ))}
         </div>
       )}
@@ -58,8 +102,10 @@ function FloatDeco({ className, size = 16, Icon = Sparkles, stroke = 1.5 }) {
 function SkeletonSlide() {
   return (
     <div className="relative z-10 flex gap-3">
-      {[1, 2].map(i => (
-        <div key={i} className="flex-1 flex flex-col gap-2 animate-pulse">
+      {/* 2 visible on mobile, 5 on desktop — show 5 skeletons, CSS clips on mobile */}
+      {[1, 2, 3, 4, 5].map(i => (
+        <div key={i} className="flex-shrink-0 flex flex-col gap-2 animate-pulse"
+             style={{ width: 'calc(20% - 10px)', minWidth: 'calc(50% - 6px)' }}>
           <div className="aspect-[3/4] rounded-2xl" style={{ background: 'rgba(224,92,136,0.15)' }} />
           <div className="h-4 rounded-full" style={{ background: 'rgba(224,92,136,0.10)' }} />
           <div className="h-3 rounded-full w-2/3" style={{ background: 'rgba(224,92,136,0.08)' }} />
@@ -149,7 +195,7 @@ export default function OfferSection({ initialData }) {
                   Big Discounts,<br className="hidden md:block" /> Bigger Style
                 </h3>
               </div>
-              {loading ? <SkeletonSlide /> : <TwoPerViewSlider products={products} />}
+              {loading ? <SkeletonSlide /> : <ResponsiveSlider products={products} />}
               <div className="relative z-10 mt-4">
                 <Link href="/shop" className="inline-flex items-center gap-1.5 font-sans text-xs font-semibold transition-colors" style={{ color: '#E05C88' }}>
                   View all deals <ArrowRight size={11} strokeWidth={2.5} />

@@ -465,6 +465,8 @@ export default function ProductDetailPage() {
     const next = wl.includes(product._id) ? wl.filter((x) => x !== product._id) : [...wl, product._id]
     localStorage.setItem(WL_KEY, JSON.stringify(next))
     setInWishlist(!inWishlist)
+    /* Notify header + other tabs immediately */
+    window.dispatchEvent(new Event('kc-wishlist-changed'))
   }
 
   /* ── Loading / not found ── */

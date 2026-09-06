@@ -43,6 +43,8 @@ export default function ProductCard({ product, priority = false }) {
       : [...wl, product._id]
     localStorage.setItem(WL_KEY, JSON.stringify(next))
     setInWishlist(!inWishlist)
+    /* Notify header + other tabs immediately */
+    window.dispatchEvent(new Event('kc-wishlist-changed'))
   }, [product._id, inWishlist])
 
   const displayPrice = product.discountPrice || product.price

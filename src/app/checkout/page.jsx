@@ -272,7 +272,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <main className="min-h-screen py-10" style={{ background: CREAM }}>
+    <main className="min-h-screen py-10 bg-white">
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
         <h1 className="font-sans text-3xl font-bold mb-8" style={{ color: BERRY }}>Checkout</h1>
 

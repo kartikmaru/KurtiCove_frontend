@@ -125,12 +125,25 @@ function HeaderInner() {
     }
   }, [])
 
-  /* ── Wishlist ────────────────────────────────────────────── */
+  /* ── Wishlist — live badge ──────────────────────────────────
+     Reads from localStorage on mount, then re-reads whenever
+     any component dispatches 'kc-wishlist-changed' (same tab)
+     or localStorage changes in another tab ('storage' event).
+  ────────────────────────────────────────────────────────────*/
   useEffect(() => {
-    try {
-      const s = localStorage.getItem(WL_KEY)
-      if (s) setWishlist(JSON.parse(s))
-    } catch {}
+    const readWishlist = () => {
+      try {
+        const s = localStorage.getItem(WL_KEY)
+        setWishlist(s ? JSON.parse(s) : [])
+      } catch { setWishlist([]) }
+    }
+    readWishlist()
+    window.addEventListener('kc-wishlist-changed', readWishlist)
+    window.addEventListener('storage', readWishlist)
+    return () => {
+      window.removeEventListener('kc-wishlist-changed', readWishlist)
+      window.removeEventListener('storage', readWishlist)
+    }
   }, [])
 
   /* ── Scroll ──────────────────────────────────────────────── */

@@ -44,6 +44,8 @@ function WishlistCard({ product, onRemove }) {
       const wl = getWishlist().filter((id) => id !== product._id)
       localStorage.setItem(WL_KEY, JSON.stringify(wl))
       onRemove(product._id)
+      /* Notify header + other tabs immediately */
+      window.dispatchEvent(new Event('kc-wishlist-changed'))
     }, 300)
   }, [product._id, onRemove])
 
