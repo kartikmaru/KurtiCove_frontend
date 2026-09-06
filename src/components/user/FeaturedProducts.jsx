@@ -142,7 +142,7 @@ export default function OfferSection({ initialData }) {
   const maxPct = products.length > 0 ? discountPct(products[0]) : 60
 
   return (
-    <section className="w-full px-4 md:px-8 lg:px-16 py-12">
+    <section id="deals60" className="w-full px-4 md:px-8 lg:px-16 py-12">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col lg:flex-row rounded-3xl overflow-hidden shadow-card-hover"
              style={{ border: '1px solid #F5C8D4', minHeight: 320 }}>
