@@ -33,9 +33,29 @@ export const metadata = {
   keywords: 'kurti, kurta, indian ethnic wear, women fashion, anarkali, cotton kurti',
 }
 
+/* Resource hints injected into <head> by Next.js metadata */
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+}
+
+/* Extra link tags for preconnect / dns-prefetch */
+export const links = [
+  { rel: 'preconnect',    href: 'https://res.cloudinary.com' },
+  { rel: 'dns-prefetch',  href: 'https://res.cloudinary.com' },
+]
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${playfair.variable} ${poppins.variable} ${dancing.variable}`}>
+      <head>
+        {/* Preconnect to Cloudinary CDN — eliminates DNS + TLS handshake latency for product images */}
+        <link rel="preconnect" href="https://res.cloudinary.com" />
+        <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+        {/* Preconnect to Google Fonts (already loaded by next/font but belt-and-suspenders) */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      </head>
       <body className="font-sans bg-[#FCFAE0] text-[#7B2447] antialiased">
         <ReduxProvider>
           {/* Preloader — full-screen overlay on first session visit */}

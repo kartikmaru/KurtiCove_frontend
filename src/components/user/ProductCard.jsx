@@ -1,6 +1,5 @@
 'use client'
 import Link from 'next/link'
-import { Heart } from 'lucide-react'
 import { AiFillHeart, AiOutlineHeart } from 'react-icons/ai'
 import { useState, useEffect, useCallback } from 'react'
 
@@ -14,18 +13,21 @@ const WL_KEY = 'kc_wishlist'
 const getWishlist = () => { try { return JSON.parse(localStorage.getItem(WL_KEY) || '[]') } catch { return [] } }
 
 /*
-  UNIFIED PRODUCT CARD — used on home sections, shop grid, similar products.
-  Reference design:
-    • White card, rounded-2xl, soft rose border, lift on hover
-    • Large image filling top (3:4 ratio, object-contain on white/light bg)
-    • Name — bold berry, sans, 1-line clamp
-    • Category — small muted mauve, 1-line clamp
-    • Price row — selling price bold rose, struck-through original muted
-    • Full-width "View Details" button → navigates to PDP (NO direct add-to-cart)
-    • Wishlist heart — top-right corner of image
-    • NO badges/labels of any kind
+  Cloudinary URL transformer — adds auto quality, auto format, and
+  width transformation so the browser receives an appropriately-sized
+  WebP/AVIF rather than the raw upload.
+
+  If the URL is not a Cloudinary URL (e.g. placeholder), returns it unchanged.
+  w=400 matches the typical 2-column card width on mobile/desktop grids.
 */
-export default function ProductCard({ product }) {
+function cdnImg(url, w = 400) {
+  if (!url) return url
+  if (!url.includes('res.cloudinary.com')) return url
+  // Insert transformation after /upload/ or /image/upload/
+  return url.replace(/\/upload\//, `/upload/w_${w},q_auto:good,f_auto,dpr_auto/`)
+}
+
+export default function ProductCard({ product, priority = false }) {
   const [inWishlist, setInWishlist] = useState(false)
 
   useEffect(() => {
@@ -45,36 +47,45 @@ export default function ProductCard({ product }) {
 
   const displayPrice = product.discountPrice || product.price
   const hasDiscount  = product.discountPrice && product.discountPrice < product.price
+  const imgSrc       = cdnImg(product.images?.[0])
 
   return (
     <Link href={`/product/${product._id}`} className="group block h-full">
       <div
         className="bg-white rounded-2xl overflow-hidden flex flex-col h-full transition-all duration-300 hover:-translate-y-1"
-        style={{
-          border:    `1px solid ${BORDER}`,
-          boxShadow: '0 1px 6px rgba(224,92,136,0.07)',
-        }}
+        style={{ border: `1px solid ${BORDER}`, boxShadow: '0 1px 6px rgba(224,92,136,0.07)' }}
         onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 8px 28px rgba(224,92,136,0.16)' }}
         onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 1px 6px rgba(224,92,136,0.07)' }}
       >
         {/* ── IMAGE ── */}
         <div className="relative aspect-[3/4] bg-[#fafafa] overflow-hidden">
-          {product.images?.length > 0 ? (
+          {imgSrc ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={product.images[0]}
+              src={imgSrc}
               alt={product.name}
+              /*
+                Below-fold cards use lazy loading + async decoding.
+                The first card in a hero/above-fold position can pass
+                priority=true to get eager + fetchpriority=high.
+              */
+              loading={priority ? 'eager' : 'lazy'}
+              decoding={priority ? 'sync' : 'async'}
+              fetchPriority={priority ? 'high' : 'low'}
               className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-[1.04]"
+              width={400}
+              height={533}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-4xl">👗</div>
           )}
 
-          {/* Out of stock overlay — no badges */}
+          {/* Out of stock — no marketing badges */}
           {product.stock === 0 && (
             <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
-              <span className="bg-white text-xs font-semibold px-3 py-1 rounded-full shadow"
-                    style={{ color: BERRY }}>Out of Stock</span>
+              <span className="bg-white text-xs font-semibold px-3 py-1 rounded-full shadow" style={{ color: BERRY }}>
+                Out of Stock
+              </span>
             </div>
           )}
 
@@ -94,25 +105,20 @@ export default function ProductCard({ product }) {
         <div className="p-2.5 md:p-3.5 flex flex-col gap-1 flex-1">
 
           {/* Product name */}
-          <h3
-            className="font-sans font-bold text-[12px] md:text-sm leading-snug line-clamp-1"
-            style={{ color: BERRY }}
-          >
+          <h3 className="font-sans font-bold text-[12px] md:text-sm leading-snug line-clamp-1" style={{ color: BERRY }}>
             {product.name}
           </h3>
 
-          {/* Category / type line — muted mauve */}
+          {/* Category */}
           {product.category && (
-            <p className="font-sans text-[10px] md:text-[11px] line-clamp-1 leading-none"
-               style={{ color: MAUVE }}>
+            <p className="font-sans text-[10px] md:text-[11px] line-clamp-1 leading-none" style={{ color: MAUVE }}>
               {product.category}
             </p>
           )}
 
-          {/* Spacer */}
           <div className="flex-1 min-h-[4px]" />
 
-          {/* Price row */}
+          {/* Price */}
           <div className="flex items-baseline gap-1.5 flex-wrap">
             <span className="font-sans font-bold text-sm md:text-[15px] leading-none" style={{ color: ROSE }}>
               ₹{displayPrice.toLocaleString()}
@@ -124,7 +130,7 @@ export default function ProductCard({ product }) {
             )}
           </div>
 
-          {/* Full-width CTA — navigates to PDP, does NOT add to cart directly */}
+          {/* CTA — navigates to PDP, does NOT add to cart directly */}
           <Link
             href={`/product/${product._id}`}
             onClick={(e) => e.stopPropagation()}
