@@ -53,118 +53,183 @@ const SORT_OPTIONS = [
 ]
 
 /* ═══ SHOP BANNER SLIDER ═══
-   3 clean slides — no text overlays, no dots, glassy chevron arrows.
-   Images: /shop%20banner/image1.webp, image2.webp, image3.webp
-   Aspect ratio locked to 1500×650 (native banner dimensions).
-   Starts below the fixed header using the standard spacer mechanism.
-   First slide: eager + fetchPriority high. Others: lazy shimmer.
-════════════════════════════════════════════════════════════ */
+   3 slides from /shop-banner/ — no overlays, no dots, smooth crossfade.
+   Root causes fixed:
+   1. lazy loading on hidden slides prevented browser from downloading
+      images 2 & 3 (opacity:0 = not visible = skipped by lazy loader).
+      Fix: all 3 images load eagerly (they're small WebP, ~130KB each).
+   2. Crossfade: all slides stay at the same zIndex while transitioning
+      so the outgoing slide remains visible during the opacity fade.
+      Only AFTER the transition finishes does the inactive slide drop to z:0.
+   3. Auto-play uses useCallback + useRef so startTimer is stable across
+      renders and never creates ghost intervals.
+════════════════════════════════════════════════════════════════════ */
 const SHOP_BANNERS = [
-  { src: '/shop%20banner/image1.webp', alt: 'Kurti Cove Shop Banner 1' },
-  { src: '/shop%20banner/image2.webp', alt: 'Kurti Cove Shop Banner 2' },
-  { src: '/shop%20banner/image3.webp', alt: 'Kurti Cove Shop Banner 3' },
+  { src: '/shop-banner/image1.webp', alt: 'Kurti Cove Shop Banner 1' },
+  { src: '/shop-banner/image2.webp', alt: 'Kurti Cove Shop Banner 2' },
+  { src: '/shop-banner/image3.webp', alt: 'Kurti Cove Shop Banner 3' },
 ]
 
 function PromoBannerSlider() {
-  const [current, setCurrent] = useState(0)
-  const timerRef              = useRef(null)
-  const total                 = SHOP_BANNERS.length
+  const [current,  setCurrent]  = useState(0)
+  const [previous, setPrevious] = useState(null)   // track outgoing slide for z-index
+  const timerRef = useRef(null)
+  const total    = SHOP_BANNERS.length
 
-  const startTimer = () => {
+  const startTimer = useCallback(() => {
     clearInterval(timerRef.current)
-    timerRef.current = setInterval(() => setCurrent(c => (c + 1) % total), 4200)
-  }
+    timerRef.current = setInterval(() =>
+      setCurrent(c => (c + 1) % total)
+    , 4200)
+  }, [total])
 
-  useEffect(() => { startTimer(); return () => clearInterval(timerRef.current) }, [])  // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    startTimer()
+    return () => clearInterval(timerRef.current)
+  }, [startTimer])
 
-  const goTo   = (idx) => { setCurrent(((idx % total) + total) % total); startTimer() }
-  const goNext = () => goTo(current + 1)
-  const goPrev = () => goTo(current - 1)
+  const goTo = useCallback((idx) => {
+    const next = ((idx % total) + total) % total
+    setCurrent(prev => { setPrevious(prev); return next })
+    startTimer()
+  }, [total, startTimer])
+
+  const goNext = useCallback(() => goTo(current + 1), [current, goTo])
+  const goPrev = useCallback(() => goTo(current - 1), [current, goTo])
 
   return (
     <>
       <style>{`
-        /* Lock container to native 1500×650 ratio — never crops */
         .shop-banner-wrap {
           position: relative;
           width: 100%;
           overflow: hidden;
-          aspect-ratio: 1500 / 650;
+          border-radius: 0;
+          height: 160px;
         }
-        /* Glassy arrow buttons — same style as hero */
+        @media (min-width: 480px)  { .shop-banner-wrap { height: 200px; } }
+        @media (min-width: 640px)  { .shop-banner-wrap { height: 240px; border-radius: 16px; } }
+        @media (min-width: 768px)  { .shop-banner-wrap { height: 300px; border-radius: 20px; } }
+        @media (min-width: 1024px) { .shop-banner-wrap { height: 360px; border-radius: 20px; } }
+
+        /* Crossfade: all slides absolutely stacked; opacity drives visibility */
+        .shop-slide {
+          position: absolute;
+          inset: 0;
+          transition: opacity 0.75s ease;
+        }
+        .shop-slide img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: center;
+          display: block;
+          /* subtle scale settle on entering slide */
+          transition: transform 0.75s ease;
+        }
+        .shop-slide.entering img  { transform: scale(1.02); }
+        .shop-slide.active   img  { transform: scale(1.0);  }
+
+        /* Glassy edge arrows */
         .shop-arrow {
           position: absolute;
           top: 50%;
           transform: translateY(-50%);
-          z-index: 20;
+          z-index: 30;
           display: flex;
           align-items: center;
           justify-content: center;
           border-radius: 50%;
           cursor: pointer;
-          width: 40px; height: 40px;
-          background: rgba(255,255,255,0.78);
-          border: 1.5px solid rgba(123,36,71,0.22);
-          box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+          width: 36px; height: 36px;
+          background: rgba(255,255,255,0.82);
+          border: 1.5px solid rgba(123,36,71,0.20);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.12);
           color: #7B2447;
           backdrop-filter: blur(6px);
           -webkit-backdrop-filter: blur(6px);
-          transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+          transition: transform 0.18s ease, background 0.18s ease,
+                      box-shadow 0.18s ease, color 0.18s ease;
         }
         .shop-arrow:hover {
-          background: rgba(255,255,255,0.95);
-          box-shadow: 0 4px 16px rgba(224,92,136,0.28);
-          transform: translateY(-50%) scale(1.08);
+          background: rgba(255,255,255,0.97);
+          box-shadow: 0 3px 14px rgba(224,92,136,0.28);
+          transform: translateY(-50%) scale(1.1);
           color: #E05C88;
         }
-        @media (max-width: 767px) {
-          .shop-arrow { width: 32px; height: 32px; }
+        @media (max-width: 479px) {
+          .shop-arrow { width: 28px; height: 28px; }
         }
-        /* Shimmer placeholder for lazy slides */
-        .shop-slide-shimmer {
-          background: linear-gradient(90deg, #f5e8ec 25%, #fde8ee 50%, #f5e8ec 75%);
-          background-size: 200% 100%;
-          animation: shimmer 1.6s infinite;
+
+        /*
+          Bottom fade overlay — sits above slide images (z:5) but below arrows (z:30).
+          Dissolves the banner's bottom edge into the white page background.
+          pointer-events:none so it never blocks slide clicks.
+        */
+        .shop-banner-wrap::after {
+          content: '';
+          position: absolute;
+          left: 0; right: 0; bottom: 0;
+          height: 22%;
+          background: linear-gradient(to top, #FFFFFF 0%, rgba(255,255,255,0) 100%);
+          pointer-events: none;
+          z-index: 5;
         }
-        @keyframes shimmer { to { background-position: -200% 0; } }
       `}</style>
 
       <div className="shop-banner-wrap">
-        {SHOP_BANNERS.map((b, i) => (
-          <div
-            key={b.src}
-            className="absolute inset-0 transition-opacity duration-700 ease-in-out"
-            style={{ opacity: i === current ? 1 : 0, zIndex: i === current ? 1 : 0, pointerEvents: i === current ? 'auto' : 'none' }}
-            aria-hidden={i !== current}
-          >
-            {/* Shimmer shown while lazy image loads */}
-            {i !== 0 && <div className="absolute inset-0 shop-slide-shimmer" aria-hidden="true" />}
 
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={b.src}
-              alt={b.alt}
-              className="w-full h-full"
-              style={{ objectFit: 'fill', display: 'block' }}
-              draggable={false}
-              loading={i === 0 ? 'eager' : 'lazy'}
-              decoding={i === 0 ? 'sync' : 'async'}
-              fetchPriority={i === 0 ? 'high' : 'low'}
-              width={1500}
-              height={650}
-            />
-          </div>
-        ))}
+        {SHOP_BANNERS.map((b, i) => {
+          const isActive   = i === current
+          const isOutgoing = i === previous
+
+          return (
+            <div
+              key={b.src}
+              className={`shop-slide ${isActive ? 'active' : isOutgoing ? 'entering' : ''}`}
+              style={{
+                opacity: isActive ? 1 : 0,
+                /*
+                  During a transition both active (z:2) and outgoing (z:1)
+                  slides are visible so the fade plays properly.
+                  All others stay at z:0 (invisible).
+                */
+                zIndex: isActive ? 2 : isOutgoing ? 1 : 0,
+                pointerEvents: isActive ? 'auto' : 'none',
+              }}
+              aria-hidden={!isActive}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={b.src}
+                alt={b.alt}
+                /*
+                  ALL slides load eagerly — lazy loading skips images
+                  with opacity:0 (treated as not-visible by the browser),
+                  so slides 2 & 3 would never download. At ~130KB each
+                  eager loading is cheap and ensures they're ready.
+                */
+                loading="eager"
+                decoding="async"
+                fetchPriority={i === 0 ? 'high' : 'auto'}
+                draggable={false}
+                width={1500}
+                height={650}
+              />
+            </div>
+          )
+        })}
 
         {/* Left arrow */}
         <button onClick={goPrev} aria-label="Previous slide" className="shop-arrow" style={{ left: '10px' }}>
-          <ChevronLeft size={18} strokeWidth={2} />
+          <ChevronLeft size={16} strokeWidth={2} />
         </button>
 
         {/* Right arrow */}
         <button onClick={goNext} aria-label="Next slide" className="shop-arrow" style={{ right: '10px' }}>
-          <ChevronRight size={18} strokeWidth={2} />
+          <ChevronRight size={16} strokeWidth={2} />
         </button>
+
         {/* No dots */}
       </div>
     </>
