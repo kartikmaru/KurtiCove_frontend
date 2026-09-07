@@ -52,67 +52,122 @@ const SORT_OPTIONS = [
   { label: 'Price: High to Low', value: 'desc' },
 ]
 
-/* ═══ PROMO BANNER SLIDER ═══ */
-const BANNERS = [
-  { src: '/hero/image1.png', headline: 'New Season Collection', sub: 'Fresh kurtis, handpicked for you',     cta: 'Explore Now',      href: '/shop?filter=isNewArrival', overlay: 'rgba(123,36,71,0.35)' },
-  { src: '/hero/image2.png', headline: 'Best Sellers',          sub: 'Most loved by 10,000+ customers',      cta: 'Shop Best Sellers', href: '/shop?filter=isBestSeller', overlay: 'rgba(107,69,83,0.38)' },
-  { src: '/hero/image3.png', headline: 'Festival Styles',       sub: 'Celebrate every occasion in elegance', cta: 'View Collection',   href: '/shop',                     overlay: 'rgba(123,36,71,0.32)' },
-  { src: '/hero/image4.jpg', headline: 'Up to 70% OFF',         sub: 'Limited time — grab your favourites',  cta: 'Shop Sale',         href: '/shop?sort=desc',           overlay: 'rgba(107,69,83,0.40)' },
+/* ═══ SHOP BANNER SLIDER ═══
+   3 clean slides — no text overlays, no dots, glassy chevron arrows.
+   Images: /shop%20banner/image1.webp, image2.webp, image3.webp
+   Aspect ratio locked to 1500×650 (native banner dimensions).
+   Starts below the fixed header using the standard spacer mechanism.
+   First slide: eager + fetchPriority high. Others: lazy shimmer.
+════════════════════════════════════════════════════════════ */
+const SHOP_BANNERS = [
+  { src: '/shop%20banner/image1.webp', alt: 'Kurti Cove Shop Banner 1' },
+  { src: '/shop%20banner/image2.webp', alt: 'Kurti Cove Shop Banner 2' },
+  { src: '/shop%20banner/image3.webp', alt: 'Kurti Cove Shop Banner 3' },
 ]
 
 function PromoBannerSlider() {
   const [current, setCurrent] = useState(0)
-  const [visible, setVisible] = useState(0)
   const timerRef              = useRef(null)
-  const total                 = BANNERS.length
+  const total                 = SHOP_BANNERS.length
 
-  useEffect(() => {
-    timerRef.current = setInterval(() => setCurrent((c) => (c + 1) % total), 4000)
-    return () => clearInterval(timerRef.current)
-  }, [total])
+  const startTimer = () => {
+    clearInterval(timerRef.current)
+    timerRef.current = setInterval(() => setCurrent(c => (c + 1) % total), 4200)
+  }
 
-  useEffect(() => {
-    const t = setTimeout(() => setVisible(current), 30)
-    return () => clearTimeout(t)
-  }, [current])
+  useEffect(() => { startTimer(); return () => clearInterval(timerRef.current) }, [])  // eslint-disable-line react-hooks/exhaustive-deps
+
+  const goTo   = (idx) => { setCurrent(((idx % total) + total) % total); startTimer() }
+  const goNext = () => goTo(current + 1)
+  const goPrev = () => goTo(current - 1)
 
   return (
-    <div className="relative w-full h-[180px] sm:h-[260px] md:h-[360px] overflow-hidden">
-      {BANNERS.map((b, i) => (
-        <div key={i} className="absolute inset-0 transition-all duration-700 ease-in-out"
-          style={{ opacity: i === visible ? 1 : 0, transform: i === visible ? 'translateY(0)' : 'translateY(12px)', zIndex: i === current ? 1 : 0, pointerEvents: i === visible ? 'auto' : 'none' }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={b.src} alt={b.headline} className="w-full h-full object-cover object-center" draggable={false} />
-          <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.38)' }} />
-          <div className="absolute inset-0" style={{ background: b.overlay }} />
-          <div className="absolute inset-0 flex flex-col justify-center px-6 sm:px-10 md:px-16 pb-6">
-            <p className="font-sans text-white/60 text-[10px] sm:text-xs tracking-[0.25em] uppercase mb-1.5 font-semibold">Kurti Cove</p>
-            <h2 className="font-bold leading-tight mb-2.5"
-              style={{ fontFamily: 'var(--font-playfair), serif', fontSize: 'clamp(1.35rem, 4.5vw, 2.75rem)', background: `linear-gradient(100deg, #fff 0%, ${PINK} 55%, ${PEACH} 100%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-              {b.headline}
-            </h2>
-            <p className="font-sans text-sm mb-4 hidden sm:block max-w-xs"
-              style={{ background: 'linear-gradient(90deg,rgba(255,255,255,0.80) 0%,rgba(251,219,187,0.70) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-              {b.sub}
-            </p>
-            <Link href={b.href} className="self-start inline-flex items-center gap-2 font-sans font-bold text-xs sm:text-sm px-5 py-2 rounded-full shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 text-white"
-              style={{ background: ROSE }}>
-              {b.cta} <ChevronRight size={13} strokeWidth={2.5} />
-            </Link>
+    <>
+      <style>{`
+        /* Lock container to native 1500×650 ratio — never crops */
+        .shop-banner-wrap {
+          position: relative;
+          width: 100%;
+          overflow: hidden;
+          aspect-ratio: 1500 / 650;
+        }
+        /* Glassy arrow buttons — same style as hero */
+        .shop-arrow {
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          z-index: 20;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          cursor: pointer;
+          width: 40px; height: 40px;
+          background: rgba(255,255,255,0.78);
+          border: 1.5px solid rgba(123,36,71,0.22);
+          box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+          color: #7B2447;
+          backdrop-filter: blur(6px);
+          -webkit-backdrop-filter: blur(6px);
+          transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+        }
+        .shop-arrow:hover {
+          background: rgba(255,255,255,0.95);
+          box-shadow: 0 4px 16px rgba(224,92,136,0.28);
+          transform: translateY(-50%) scale(1.08);
+          color: #E05C88;
+        }
+        @media (max-width: 767px) {
+          .shop-arrow { width: 32px; height: 32px; }
+        }
+        /* Shimmer placeholder for lazy slides */
+        .shop-slide-shimmer {
+          background: linear-gradient(90deg, #f5e8ec 25%, #fde8ee 50%, #f5e8ec 75%);
+          background-size: 200% 100%;
+          animation: shimmer 1.6s infinite;
+        }
+        @keyframes shimmer { to { background-position: -200% 0; } }
+      `}</style>
+
+      <div className="shop-banner-wrap">
+        {SHOP_BANNERS.map((b, i) => (
+          <div
+            key={b.src}
+            className="absolute inset-0 transition-opacity duration-700 ease-in-out"
+            style={{ opacity: i === current ? 1 : 0, zIndex: i === current ? 1 : 0, pointerEvents: i === current ? 'auto' : 'none' }}
+            aria-hidden={i !== current}
+          >
+            {/* Shimmer shown while lazy image loads */}
+            {i !== 0 && <div className="absolute inset-0 shop-slide-shimmer" aria-hidden="true" />}
+
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={b.src}
+              alt={b.alt}
+              className="w-full h-full"
+              style={{ objectFit: 'fill', display: 'block' }}
+              draggable={false}
+              loading={i === 0 ? 'eager' : 'lazy'}
+              decoding={i === 0 ? 'sync' : 'async'}
+              fetchPriority={i === 0 ? 'high' : 'low'}
+              width={1500}
+              height={650}
+            />
           </div>
-        </div>
-      ))}
-      <div className="absolute bottom-0 left-0 right-0 h-10 pointer-events-none z-10"
-        style={{ background: 'linear-gradient(to bottom, transparent 0%, rgba(255,255,255,0.9) 100%)' }}
-        aria-hidden="true" />
-      <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 z-20 flex gap-1.5">
-        {BANNERS.map((_, i) => (
-          <button key={i} onClick={() => { setCurrent(i); clearInterval(timerRef.current); timerRef.current = setInterval(() => setCurrent((c) => (c + 1) % total), 4000) }}
-            aria-label={`Go to slide ${i + 1}`}
-            className={`rounded-full transition-all duration-300 ${i === current ? 'w-5 h-2 bg-white' : 'w-2 h-2 bg-white/50 hover:bg-white/80'}`} />
         ))}
+
+        {/* Left arrow */}
+        <button onClick={goPrev} aria-label="Previous slide" className="shop-arrow" style={{ left: '10px' }}>
+          <ChevronLeft size={18} strokeWidth={2} />
+        </button>
+
+        {/* Right arrow */}
+        <button onClick={goNext} aria-label="Next slide" className="shop-arrow" style={{ right: '10px' }}>
+          <ChevronRight size={18} strokeWidth={2} />
+        </button>
+        {/* No dots */}
       </div>
-    </div>
+    </>
   )
 }
 
